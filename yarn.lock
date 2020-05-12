@@ -7008,6 +7008,11 @@ map-visit@^1.0.0:
   dependencies:
     object-visit "^1.0.0"
 
+material-icons@^0.3.1:
+  version "0.3.1"
+  resolved "https://registry.npm.taobao.org/material-icons/download/material-icons-0.3.1.tgz#425e06e2448632d6249d6e1ffe2993682c5b171e"
+  integrity sha1-Ql4G4kSGMtYknW4f/imTaCxbFx4=
+
 maxmin@^2.1.0:
   version "2.1.0"
   resolved "https://registry.npm.taobao.org/maxmin/download/maxmin-2.1.0.tgz#4d3b220903d95eee7eb7ac7fa864e72dc09a3166"
