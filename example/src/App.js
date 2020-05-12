@@ -1,10 +1,9 @@
 import React from 'react'
 
-import { ExampleComponent } from 'qjp-slate-editor'
-import 'qjp-slate-editor/dist/index.css'
+import SlateEditor from 'qjp-slate-editor'
 
 const App = () => {
-  return <ExampleComponent text="Create React Library Example 😄" />
+  return <SlateEditor />
 }
 
 export default App
