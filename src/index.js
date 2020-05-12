@@ -338,6 +338,10 @@ const App = () => {
                 <MarkButton format='code' icon='code' title='代码' />
                 <BlockButton format='heading-one' icon='looks_one' title='一级标题' />
                 <BlockButton format='heading-two' icon='looks_two' title='二级标题' />
+                <BlockButton format='heading-three' icon='looks_3' title='三级标题' />
+                <BlockButton format='heading-four' icon='looks_4' title='四级标题' />
+                <BlockButton format='heading-five' icon='looks_5' title='五级标题' />
+                <BlockButton format='heading-six' icon='looks_6' title='六级标题' />
                 <BlockButton format='block-quote' icon='format_quote' title='引用' />
                 <BlockButton
                     format='numbered-list'
@@ -351,6 +355,7 @@ const App = () => {
                 />
             </Toolbar>
             <Editable
+                className="qjp-slate-editor"
                 renderElement={renderElement}
                 renderLeaf={renderLeaf}
                 placeholder='Enter some rich text…'
