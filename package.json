@@ -2,7 +2,7 @@
   "name": "qjp-slate-editor",
   "version": "1.0.0",
   "description": "Made with create-react-library",
-  "author": "",
+  "author": "qjp",
   "license": "MIT",
   "repository": "/qjp-slate-editor",
   "main": "dist/index.js",
