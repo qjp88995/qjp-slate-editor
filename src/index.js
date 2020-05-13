@@ -1,10 +1,13 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { Slate, Editable, withReact, useSlate } from 'slate-react';
-import { createEditor, Transforms, Editor, Point, Range } from 'slate';
+import { createEditor, Transforms, Editor } from 'slate';
 import { withHistory } from 'slate-history';
 import isHotkey from 'is-hotkey';
 import { Button, Icon, Toolbar } from './components';
+import Element from './element';
+import withTables from './customEditor/withTables';
 import './styles.module.css';
+import Leaf from './leaf';
 
 const HOTKEYS = {
     'mod+b': 'bold',
@@ -13,7 +16,7 @@ const HOTKEYS = {
     'mod+`': 'code'
 }
 
-const LIST_TYPES = ['numbered-list', 'bulleted-list']
+const LIST_TYPES = ['ul', 'ol']
 
 const toggleBlock = (editor, format) => {
     const isActive = isBlockActive(editor, format)
@@ -25,7 +28,7 @@ const toggleBlock = (editor, format) => {
     })
 
     Transforms.setNodes(editor, {
-        type: isActive ? 'paragraph' : isList ? 'list-item' : format
+        type: isActive ? 'paragraph' : isList ? 'li' : format
     })
 
     if (!isActive && isList) {
@@ -55,124 +58,6 @@ const isBlockActive = (editor, format) => {
 const isMarkActive = (editor, format) => {
     const marks = Editor.marks(editor)
     return marks ? marks[format] === true : false
-}
-
-const withTables = (editor) => {
-    const { deleteBackward, deleteForward, insertBreak } = editor
-
-    editor.deleteBackward = (unit) => {
-        const { selection } = editor
-        if (selection && Range.isCollapsed(selection)) {
-            const [cell] = Editor.nodes(editor, {
-                match: (n) => n.type === 'table-cell'
-            })
-
-            if (cell) {
-                const [, cellPath] = cell
-                const start = Editor.start(editor, cellPath)
-
-                if (Point.equals(selection.anchor, start)) {
-                    return
-                }
-            }
-        }
-
-        deleteBackward(unit)
-    }
-
-    editor.deleteForward = (unit) => {
-        const { selection } = editor
-
-        if (selection && Range.isCollapsed(selection)) {
-            const [cell] = Editor.nodes(editor, {
-                match: (n) => n.type === 'table-cell'
-            })
-
-            if (cell) {
-                const [, cellPath] = cell
-                const end = Editor.end(editor, cellPath)
-
-                if (Point.equals(selection.anchor, end)) {
-                    return
-                }
-            }
-        }
-
-        deleteForward(unit)
-    }
-
-    editor.insertBreak = () => {
-        const { selection } = editor
-
-        if (selection) {
-            const [table] = Editor.nodes(editor, { match: (n) => n.type === 'table' })
-
-            if (table) {
-                return
-            }
-        }
-
-        insertBreak()
-    }
-
-    return editor
-}
-
-const Element = ({ attributes, children, element }) => {
-    switch (element.type) {
-        case 'block-quote':
-            return <blockquote {...attributes}>{children}</blockquote>
-        case 'bulleted-list':
-            return <ul {...attributes}>{children}</ul>
-        case 'heading-one':
-            return <h1 {...attributes}>{children}</h1>
-        case 'heading-two':
-            return <h2 {...attributes}>{children}</h2>
-        case 'heading-three':
-            return <h3 {...attributes}>{children}</h3>
-        case 'heading-four':
-            return <h4 {...attributes}>{children}</h4>
-        case 'heading-five':
-            return <h5 {...attributes}>{children}</h5>
-        case 'heading-six':
-            return <h6 {...attributes}>{children}</h6>
-        case 'list-item':
-            return <li {...attributes}>{children}</li>
-        case 'numbered-list':
-            return <ol {...attributes}>{children}</ol>
-        case 'table':
-            return (
-                <table>
-                    <tbody {...attributes}>{children}</tbody>
-                </table>
-            )
-        case 'table-row':
-            return <tr {...attributes}>{children}</tr>
-        case 'table-cell':
-            return <td {...attributes}>{children}</td>
-        default:
-            return <p {...attributes}>{children}</p>
-    }
-}
-
-const Leaf = ({ attributes, children, leaf }) => {
-    if (leaf.bold) {
-        children = <strong>{children}</strong>
-    }
-
-    if (leaf.code) {
-        children = <code>{children}</code>
-    }
-
-    if (leaf.italic) {
-        children = <em>{children}</em>
-    }
-
-    if (leaf.underline) {
-        children = <u>{children}</u>
-    }
-
-    return <span {...attributes}>{children}</span>
 }
 
 const BlockButton = ({ format, icon, ...props }) => {
@@ -224,18 +109,16 @@ const initialValue = [
         type: 'paragraph',
         children: [
             {
-                text:
-                    "Since it's rich text, you can do things like turn a selection of text "
+                text: "Since it's rich text, you can do things like turn a selection of text "
             },
             { text: 'bold', bold: true },
             {
-                text:
-                    ', or add a semantically rendered block quote in the middle of the page, like this:'
+                text: ', or add a semantically rendered block quote in the middle of the page, like this:'
             }
         ]
     },
     {
-        type: 'block-quote',
+        type: 'blockquote',
         children: [{ text: 'A wise quote.' }]
     },
     {
@@ -243,73 +126,91 @@ const initialValue = [
         children: [{ text: 'Try it out for yourself!' }]
     },
     {
-        type: 'table',
+        type: 'tableWrap',
         children: [
             {
-                type: 'table-row',
-                children: [
-                    {
-                        type: 'table-cell',
-                        children: [{ text: '' }]
-                    },
-                    {
-                        type: 'table-cell',
-                        children: [{ text: 'Human', bold: true }]
-                    },
-                    {
-                        type: 'table-cell',
-                        children: [{ text: 'Dog', bold: true }]
-                    },
-                    {
-                        type: 'table-cell',
-                        children: [{ text: 'Cat', bold: true }]
-                    }
-                ]
+                type: 'tableBefore',
+                children: [{ text: '' }],
             },
             {
-                type: 'table-row',
+                type: 'table',
                 children: [
                     {
-                        type: 'table-cell',
-                        children: [{ text: '# of Feet', bold: true }]
-                    },
-                    {
-                        type: 'table-cell',
-                        children: [{ text: '2' }]
-                    },
-                    {
-                        type: 'table-cell',
-                        children: [{ text: '4' }]
-                    },
-                    {
-                        type: 'table-cell',
-                        children: [{ text: '4' }]
+                        type: 'tbody',
+                        children: [
+                            {
+                                type: 'tr',
+                                children: [
+                                    {
+                                        type: 'td',
+                                        children: [{ text: '' }]
+                                    },
+                                    {
+                                        type: 'td',
+                                        children: [{ text: 'Human', bold: true }]
+                                    },
+                                    {
+                                        type: 'td',
+                                        children: [{ text: 'Dog', bold: true }]
+                                    },
+                                    {
+                                        type: 'td',
+                                        children: [{ text: 'Cat', bold: true }]
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'tr',
+                                children: [
+                                    {
+                                        type: 'td',
+                                        children: [{ text: '# of Feet', bold: true }]
+                                    },
+                                    {
+                                        type: 'td',
+                                        children: [{ text: '2' }]
+                                    },
+                                    {
+                                        type: 'td',
+                                        children: [{ text: '4' }]
+                                    },
+                                    {
+                                        type: 'td',
+                                        children: [{ text: '4' }]
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'tr',
+                                children: [
+                                    {
+                                        type: 'td',
+                                        children: [{ text: '# of Lives', bold: true }]
+                                    },
+                                    {
+                                        type: 'td',
+                                        children: [{ text: '1' }]
+                                    },
+                                    {
+                                        type: 'td',
+                                        children: [{ text: '1' }]
+                                    },
+                                    {
+                                        type: 'td',
+                                        children: [{ text: '9' }]
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                ]
+                ],
             },
             {
-                type: 'table-row',
-                children: [
-                    {
-                        type: 'table-cell',
-                        children: [{ text: '# of Lives', bold: true }]
-                    },
-                    {
-                        type: 'table-cell',
-                        children: [{ text: '1' }]
-                    },
-                    {
-                        type: 'table-cell',
-                        children: [{ text: '1' }]
-                    },
-                    {
-                        type: 'table-cell',
-                        children: [{ text: '9' }]
-                    }
-                ]
-            }
-        ]
-    }
+                type: 'tableAfter',
+                children: [{ text: '' }],
+            },
+        ],
+    },
 ]
 
 const App = () => {
@@ -321,7 +222,6 @@ const App = () => {
         []
     )
     const onChange = (value) => {
-        console.log(value)
         setValue(value)
     }
 
@@ -336,20 +236,20 @@ const App = () => {
                     title='下划线'
                 />
                 <MarkButton format='code' icon='code' title='代码' />
-                <BlockButton format='heading-one' icon='looks_one' title='一级标题' />
-                <BlockButton format='heading-two' icon='looks_two' title='二级标题' />
-                <BlockButton format='heading-three' icon='looks_3' title='三级标题' />
-                <BlockButton format='heading-four' icon='looks_4' title='四级标题' />
-                <BlockButton format='heading-five' icon='looks_5' title='五级标题' />
-                <BlockButton format='heading-six' icon='looks_6' title='六级标题' />
-                <BlockButton format='block-quote' icon='format_quote' title='引用' />
+                <BlockButton format='h1' icon='looks_one' title='一级标题' />
+                <BlockButton format='h2' icon='looks_two' title='二级标题' />
+                <BlockButton format='h3' icon='looks_3' title='三级标题' />
+                <BlockButton format='h4' icon='looks_4' title='四级标题' />
+                <BlockButton format='h5' icon='looks_5' title='五级标题' />
+                <BlockButton format='h6' icon='looks_6' title='六级标题' />
+                <BlockButton format='blockquote' icon='format_quote' title='引用' />
                 <BlockButton
-                    format='numbered-list'
+                    format='ol'
                     icon='format_list_numbered'
                     title='有序列表'
                 />
                 <BlockButton
-                    format='bulleted-list'
+                    format='ul'
                     icon='format_list_bulleted'
                     title='无序列表'
                 />
