@@ -5,6 +5,7 @@ export const TableWrap = React.forwardRef((props, ref) => {
     const { children, ...attributes } = props;
     const className = css`
         margin: 10px 0;
+        text-align: center;
     `;
     return (
         <div ref={ref} {...attributes} className={className}>{children}</div>
@@ -37,6 +38,7 @@ export const Table = React.forwardRef((props, ref) => {
     const { children, ...attributes } = props;
     const className = css`
         display: inline-table;
+        width: 80%;
         vertical-align: middle;
         border: 1px solid #ccc;
         border-collapse: collapse;

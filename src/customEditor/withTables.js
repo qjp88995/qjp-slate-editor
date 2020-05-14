@@ -1,12 +1,12 @@
 import { Range, Editor, Point, Transforms, Node } from "slate"
+import { customElement } from "../helpers"
 
 const withTables = (editor) => {
-    const { deleteBackward, deleteForward, insertBreak } = editor
+    const { deleteBackward, deleteForward, insertBreak, insertText } = editor
 
     const commonDelete = () => {
         const { selection } = editor
         if (selection && Range.isCollapsed(selection)) {
-
             // ### 实现的功能：在表格下面删除空元素时不进行合并 ###
 
             // 判断光标是否在位置0
@@ -86,8 +86,7 @@ const withTables = (editor) => {
 
     editor.insertBreak = () => {
         const { selection } = editor
-        const text = { text: '' };
-        const p = { type: 'p', children: [text] };
+        const p = customElement('p');
 
         if (selection && Range.isCollapsed(selection)) {
             const [tableBefore] = Editor.nodes(editor, {
@@ -119,6 +118,16 @@ const withTables = (editor) => {
         }
 
         insertBreak()
+    }
+
+    editor.insertText = (text) => {
+        const [tableAfter] = Editor.nodes(editor, {
+            match: (n) => n.type === 'tableAfter'
+        })
+        if (tableAfter) {
+            return
+        }
+        insertText(text);
     }
 
     return editor

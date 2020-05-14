@@ -2,45 +2,12 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { Slate, Editable, withReact, useSlate } from 'slate-react';
 import { createEditor } from 'slate';
 import { withHistory } from 'slate-history';
-import { Button, Icon, Toolbar } from './components';
+import { Toolbar, MarkButton, BlockButton, CreateTableButton } from './components';
 import Element from './element';
 import withTables from './customEditor/withTables';
 import Leaf from './leaf';
-import { isBlockActive, toggleBlock, isMarkActive, toggleMark } from './helpers';
 import { onKeyDown } from './handles';
 import './styles.module.css';
-
-const BlockButton = ({ format, icon, ...props }) => {
-    const editor = useSlate()
-    return (
-        <Button
-            {...props}
-            active={isBlockActive(editor, format)}
-            onMouseDown={(event) => {
-                event.preventDefault()
-                toggleBlock(editor, format)
-            }}
-        >
-            <Icon>{icon}</Icon>
-        </Button>
-    )
-}
-
-const MarkButton = ({ format, icon, ...props }) => {
-    const editor = useSlate()
-    return (
-        <Button
-            {...props}
-            active={isMarkActive(editor, format)}
-            onMouseDown={(event) => {
-                event.preventDefault()
-                toggleMark(editor, format)
-            }}
-        >
-            <Icon>{icon}</Icon>
-        </Button>
-    )
-}
 
 const emptyValue = [{ type: 'p', children: [{ text: '' }] }];
 
@@ -73,7 +40,7 @@ const App = props => {
                 <BlockButton format='blockquote' icon='format_quote' title='引用' />
                 <BlockButton format='ol' icon='format_list_numbered' title='有序列表' />
                 <BlockButton format='ul' icon='format_list_bulleted' title='无序列表' />
-                <BlockButton format='table' icon='table_chart' title='表格' />
+                <CreateTableButton icon='table_chart' title='表格' />
             </Toolbar>
             <Editable
                 className="qjp-slate-editor"
