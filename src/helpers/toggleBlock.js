@@ -1,7 +1,7 @@
 import { Transforms } from "slate";
 import { isBlockActive } from "./isBlockActive";
 
-const LIST_TYPES = ['ul', 'ol'];
+const LIST_TYPES = ['numbered-list', 'bulleted-list'];
 
 export const toggleBlock = (editor, format) => {
     const isActive = isBlockActive(editor, format)
@@ -13,7 +13,7 @@ export const toggleBlock = (editor, format) => {
     })
 
     Transforms.setNodes(editor, {
-        type: isActive ? 'paragraph' : isList ? 'li' : format
+        type: isActive ? 'paragraph' : isList ? 'list-item' : format
     })
 
     if (!isActive && isList) {

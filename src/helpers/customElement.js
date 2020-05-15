@@ -10,21 +10,12 @@ export const customElement = (type, options = {}) => {
     switch(type) {
         case 'table':
             const { tableRow = 0, tableCol = 0 } = options;
-            return getElement('tableWrap', [
-                getElement('tableBefore', [getText()]),
-                getElement('table', [
-                    getElement(
-                        'tbody',
-                        new Array(tableRow).fill(null).map(() => getElement(
-                            'tr',
-                            new Array(tableCol).fill(null).map(() => getElement('td', [
-                                getElement('p', [getText()]),
-                            ])))
-                        )
-                    )
-                ]),
-                getElement('tableAfter', [getText()]),
-            ]);
+            return getElement('table', new Array(tableRow).fill(null).map(() => getElement(
+                'table-row',
+                new Array(tableCol).fill(null).map(() => getElement('table-cell', [
+                    getElement('paragraph', [getText()]),
+                ])))
+            ));
         default:
             return getElement(type, [getText()]);
     }

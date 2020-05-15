@@ -35,147 +35,135 @@ const initialValue = [
         children: [{ text: 'Try it out for yourself!' }]
     },
     {
-        type: 'tableWrap',
+        type: 'table',
         children: [
             {
-                type: 'tableBefore',
-                children: [{ text: '' }],
-            },
-            {
-                type: 'table',
+                type: 'table-row',
                 children: [
                     {
-                        type: 'tbody',
+                        type: 'table-cell',
+                        rowSpan: 1,
                         children: [
                             {
-                                type: 'tr',
+                                type: 'paragraph',
                                 children: [
-                                    {
-                                        type: 'td',
-                                        children: [
-                                            {
-                                                type: 'p',
-                                                children: [
-                                                    { text: '' }
-                                                ]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'td',
-                                        children: [
-                                            {
-                                                type: 'p',
-                                                children: [{ text: 'Human', bold: true }]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'td',
-                                        children: [
-                                            {
-                                                type: 'p',
-                                                children: [{ text: 'Dog', bold: true }]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'td',
-                                        children: [{ text: 'Cat', bold: true }]
-                                    }
-                                ]
-                            },
-                            {
-                                type: 'tr',
-                                children: [
-                                    {
-                                        type: 'td',
-                                        children: [
-                                            {
-                                                type: 'p',
-                                                children: [{ text: '# of Feet', bold: true }]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'td',
-                                        children: [
-                                            {
-                                                type: 'p',
-                                                children: [{ text: '2' }]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'td',
-                                        children: [
-                                            {
-                                                type: 'p',
-                                                children: [{ text: '4' }]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'td',
-                                        children: [
-                                            {
-                                                type: 'p',
-                                                children: [{ text: '4' }]
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                type: 'tr',
-                                children: [
-                                    {
-                                        type: 'td',
-                                        children: [
-                                            {
-                                                type: 'p',
-                                                children: [{ text: '# of Lives', bold: true }]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'td',
-                                        children: [
-                                            {
-                                                type: 'p',
-                                                children: [{ text: '1' }]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'td',
-                                        children: [
-                                            {
-                                                type: 'p',
-                                                children: [{ text: '1' }]
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'td',
-                                        children: [
-                                            {
-                                                type: 'p',
-                                                children: [{ text: '9' }]
-                                            }
-                                        ]
-                                    }
+                                    { text: '' }
                                 ]
                             }
                         ]
+                    },
+                    {
+                        type: 'table-cell',
+                        children: [
+                            {
+                                type: 'paragraph',
+                                children: [{ text: 'Human', bold: true }]
+                            }
+                        ]
+                    },
+                    {
+                        type: 'table-cell',
+                        children: [
+                            {
+                                type: 'paragraph',
+                                children: [{ text: 'Dog', bold: true }]
+                            }
+                        ]
+                    },
+                    {
+                        type: 'table-cell',
+                        children: [{ text: 'Cat', bold: true }]
                     }
-                ],
+                ]
             },
             {
-                type: 'tableAfter',
-                children: [{ text: '' }],
+                type: 'table-row',
+                children: [
+                    {
+                        type: 'table-cell',
+                        children: [
+                            {
+                                type: 'paragraph',
+                                children: [{ text: '# of Feet', bold: true }]
+                            }
+                        ]
+                    },
+                    {
+                        type: 'table-cell',
+                        children: [
+                            {
+                                type: 'paragraph',
+                                children: [{ text: '2' }]
+                            }
+                        ]
+                    },
+                    {
+                        type: 'table-cell',
+                        children: [
+                            {
+                                type: 'paragraph',
+                                children: [{ text: '4' }]
+                            }
+                        ]
+                    },
+                    {
+                        type: 'table-cell',
+                        children: [
+                            {
+                                type: 'paragraph',
+                                children: [{ text: '4' }]
+                            }
+                        ]
+                    }
+                ]
             },
+            {
+                type: 'table-row',
+                children: [
+                    {
+                        type: 'table-cell',
+                        children: [
+                            {
+                                type: 'paragraph',
+                                children: [{ text: '# of Lives', bold: true }]
+                            }
+                        ]
+                    },
+                    {
+                        type: 'table-cell',
+                        rowSpan: 1,
+                        children: [
+                            {
+                                type: 'paragraph',
+                                children: [{ text: '1' }]
+                            }
+                        ]
+                    },
+                    {
+                        type: 'table-cell',
+                        children: [
+                            {
+                                type: 'paragraph',
+                                children: [{ text: '1' }]
+                            }
+                        ]
+                    },
+                    {
+                        type: 'table-cell',
+                        children: [
+                            {
+                                type: 'paragraph',
+                                children: [{ text: '9' }]
+                            }
+                        ]
+                    }
+                ]
+            }
         ],
+    },
+    {
+        type: 'paragraph',
+        children: [{ text: '' }]
     },
 ]
 

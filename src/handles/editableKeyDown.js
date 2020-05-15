@@ -8,10 +8,10 @@ const HOTKEYS = {
     'mod+`': 'code'
 }
 
-export const onKeyDown = event => {
+export const editableKeyDown = (e, editor) => {
     for (const hotkey in HOTKEYS) {
-        if (isHotkey(hotkey, event)) {
-            event.preventDefault()
+        if (isHotkey(hotkey, e)) {
+            e.preventDefault()
             const mark = HOTKEYS[hotkey]
             toggleMark(editor, mark)
         }

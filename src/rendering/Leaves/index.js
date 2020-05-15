@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Leaf = ({ attributes, children, leaf }) => {
+export const leaves = ({ attributes, children, leaf }) => {
     if (leaf.bold) {
         children = <strong>{children}</strong>
     }
@@ -19,5 +19,3 @@ const Leaf = ({ attributes, children, leaf }) => {
 
     return <span {...attributes}>{children}</span>
 }
-
-export default Leaf;

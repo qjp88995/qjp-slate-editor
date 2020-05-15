@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { cx, css } from 'emotion';
 import { useSlate } from 'slate-react';
 import { Transforms } from 'slate';
@@ -73,10 +73,10 @@ export const CreateTableButton = ({ icon, ...props }) => {
         setXy(xy);
     }
 
-    const onTdClick = (e, xy) => {
+    const onTdMouseDown = (e, xy) => {
         e.preventDefault();
         if (!active) {
-            Transforms.insertNodes(editor, customElement('table', { tableRow: xy[0] + 1, tableCol: xy[1] + 1 }))
+            Transforms.insertNodes(editor, [customElement('table', { tableRow: xy[0] + 1, tableCol: xy[1] + 1 }), customElement('paragraph')])
         }
     }
     
@@ -86,9 +86,9 @@ export const CreateTableButton = ({ icon, ...props }) => {
         setXy(null);
     }
 
-    const onButtonClick = e => {
+    const onButtonMousDown = e => {
+        e.preventDefault()
         if (!active) {
-            e.preventDefault()
             setVisible(true)
         }
     }
@@ -99,7 +99,7 @@ export const CreateTableButton = ({ icon, ...props }) => {
             active={active}
             style={{ position: 'relative' }}
             disabled={active}
-            onClick={onButtonClick}
+            onMouseDown={onButtonMousDown}
         >
             <Icon>{icon}</Icon>
             <div
@@ -145,7 +145,7 @@ export const CreateTableButton = ({ icon, ...props }) => {
                                             title={`${it[0]+1}x${it[1]+1}`}
                                             className={xy && it[0] <= xy[0] && it[1] <= xy[1] ? 'active' : ''}
                                             onMouseMove={e => onTdMouseMove(e, it)}
-                                            onClick={e => onTdClick(e, it)}
+                                            onMouseDown={e => onTdMouseDown(e, it)}
                                         />
                                     ))}
                                 </tr>
