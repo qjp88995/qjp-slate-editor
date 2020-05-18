@@ -127,12 +127,18 @@ export const MyEditor = {
                 }, {
                     at: cell[1],
                 });
-                otherCells.forEach(([, path]) => {
-                    Transforms.moveNodes(editor, {
-                        at: path,
-                        to: cell[1],
+                otherCells.forEach(([elem]) => {
+                    const [node] = Editor.nodes(editor, {
+                        at: cell[1],
                         match: n => n.type === 'paragraph',
-                    })
+                        reverse: true,
+                    });
+                    const path = [...node[1]];
+                    path.push(path.pop() + 1);
+                    console.log(path, elem.children)
+                    Transforms.insertNodes(editor, elem.children, {
+                        at: path,
+                    });
                 });
                 otherCells.reverse().forEach(([, path]) => {
                     const [tableRow] = Editor.nodes(editor, { at: path, match: n => n.type === 'table-row' });
