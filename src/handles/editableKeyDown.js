@@ -1,5 +1,5 @@
 import isHotkey from "is-hotkey";
-import { toggleMark } from "../helpers";
+import { MyEditor } from "../helpers";
 
 const HOTKEYS = {
     'mod+b': 'bold',
@@ -13,7 +13,7 @@ export const editableKeyDown = (e, editor) => {
         if (isHotkey(hotkey, e)) {
             e.preventDefault()
             const mark = HOTKEYS[hotkey]
-            toggleMark(editor, mark)
+            MyEditor.toggleMark(editor, mark)
         }
     }
 }

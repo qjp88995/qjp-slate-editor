@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { cx, css } from 'emotion';
 import { useSlate } from 'slate-react';
-import { Transforms } from 'slate';
-import { toggleBlock, toggleMark, isMarkActive, isBlockActive, customElement } from '../helpers';
+import { isMarkActive, isBlockActive, MyEditor } from '../helpers';
 import { Icon } from './Icon';
 
 export const Button = React.forwardRef(
@@ -35,7 +34,11 @@ export const BlockButton = ({ format, icon, ...props }) => {
             active={isBlockActive(editor, format)}
             onMouseDown={(event) => {
                 event.preventDefault()
-                toggleBlock(editor, format)
+                if (format === 'table-cell-merge') {
+                    MyEditor.mergeTableCell(editor);
+                    return
+                }
+                MyEditor.toggleBlock(editor, format)
             }}
         >
             <Icon>{icon}</Icon>
@@ -51,7 +54,7 @@ export const MarkButton = ({ format, icon, ...props }) => {
             active={isMarkActive(editor, format)}
             onMouseDown={(event) => {
                 event.preventDefault()
-                toggleMark(editor, format)
+                MyEditor.toggleMark(editor, format)
             }}
         >
             <Icon>{icon}</Icon>
@@ -76,7 +79,9 @@ export const CreateTableButton = ({ icon, ...props }) => {
     const onTdMouseDown = (e, xy) => {
         e.preventDefault();
         if (!active) {
-            Transforms.insertNodes(editor, [customElement('table', { tableRow: xy[0] + 1, tableCol: xy[1] + 1 }), customElement('paragraph')])
+            e.stopPropagation();
+            MyEditor.insertTable(editor, xy[0] + 1, xy[1] + 1);
+            setVisible(false);
         }
     }
     

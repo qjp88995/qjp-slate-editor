@@ -45,9 +45,10 @@ const App = props => {
                 <BlockButton format='numbered-list' icon='format_list_numbered' title='有序列表' />
                 <BlockButton format='bulleted-list' icon='format_list_bulleted' title='无序列表' />
                 <CreateTableButton icon='table_chart' title='表格' />
+                <BlockButton format='table-cell-merge' icon='select_all' title='合并单元格' />
             </Toolbar>
             <Editable
-                className={css`height: 600px; overflow: auto;`}
+                className={css`height: 600px; overflow: auto; padding: 10px;`}
                 renderElement={renderElement}
                 renderLeaf={renderLeaf}
                 placeholder='Enter some rich text…'

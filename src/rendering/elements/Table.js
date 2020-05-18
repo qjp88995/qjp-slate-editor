@@ -35,7 +35,7 @@ export const TableCell = props => {
     const { children, attributes, element } = props;
     const { colSpan = 1, rowSpan = 1 } = element;
     const style = {
-        background: !element.selected ? 'inherit' : '#ccc',
+        background: !element.selected ? 'inherit' : '#edf5fa',
     }
     return (
         <td {...attributes} colSpan={colSpan} rowSpan={rowSpan} style={style}>{children}</td>

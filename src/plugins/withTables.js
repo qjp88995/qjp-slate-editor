@@ -1,5 +1,5 @@
 import { Range, Editor, Point, Transforms } from "slate"
-import { customElement } from "../helpers"
+import { createDefaultElement } from "../helpers"
 
 export const withTables = (editor) => {
     const { deleteBackward, deleteForward, insertBreak, deleteFragment, onChange } = editor
@@ -115,7 +115,7 @@ export const withTables = (editor) => {
                 match: (n) => n.type === 'tableAfter'
             })
             if (tableAfter) {
-                Transforms.insertNodes(editor, customElement('paragraph'), {
+                Transforms.insertNodes(editor, createDefaultElement(), {
                     match: n => n.type === 'tableWrap'
                 });
                 return
@@ -126,7 +126,7 @@ export const withTables = (editor) => {
             if (table) {
                 const [td] = Editor.nodes(editor, { match: (n) => n.type === 'table-cell' })
                 if (td) {
-                    Transforms.insertNodes(editor, customElement('paragraph'));
+                    Transforms.insertNodes(editor, createDefaultElement());
                 }
                 return
             }
