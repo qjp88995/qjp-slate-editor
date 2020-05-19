@@ -72,7 +72,12 @@ const initialValue = [
                     },
                     {
                         type: 'table-cell',
-                        children: [{ text: 'Cat', bold: true }]
+                        children: [
+                            {
+                                type: 'paragraph',
+                                children: [{ text: 'Cat', bold: true }]
+                            },
+                        ]
                     }
                 ]
             },
