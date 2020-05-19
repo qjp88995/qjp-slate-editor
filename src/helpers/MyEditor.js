@@ -216,50 +216,12 @@ export const MyEditor = {
                         match: n => n.type === 'table-row',
                     });
                     if (tableRow) {
-                        const [, tableRowPath] = tableRow;
                         const [firstTableRow] = Editor.nodes(editor, {
                             at: tablePath,
                             match: n => n.type === 'table-row' && n.children.some(item => item.type === 'table-cell'),
                         });
                         const maxCols = firstTableRow[0].children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
-                        const currentCols = tableRow[0].children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
-                        Transforms.insertNodes(editor, createTableRowElement(currentCols), {
-                            at: tableRowPath,
-                        });
-                        for (let i = currentCols; i < maxCols; i++) {
-                            const maxCount = 1000;
-                            let currentCount = 0;
-                            let rowSpan = 2;
-                            let currentPath = tableRowPath;
-                            while(currentPath && currentCount < maxCount) {
-                                const prevRow = Editor.previous(editor, {
-                                    at: currentPath,
-                                    match: n => n.type === 'table-row',
-                                });
-                                if (prevRow) {
-                                    const [, path] = prevRow;
-                                    const [cell] = Editor.nodes(editor, {
-                                        at: path,
-                                        match: n => n.type === 'table-cell' && n.rowSpan === rowSpan,
-                                    });
-                                    if (cell) {
-                                        Transforms.setNodes(editor, {
-                                            rowSpan: rowSpan + 1,
-                                        }, {
-                                            at: cell[1],
-                                        });
-                                        currentPath = null;
-                                    } else {
-                                        currentPath = path;
-                                        rowSpan++;
-                                    }
-                                } else {
-                                    currentPath = null;
-                                    console.error('没有找到上一个节点');
-                                }
-                                currentCount++;
-                            }
-                        }
+                        insertTableRow(editor, { maxCols, row: tableRow });
                     }
                 }
             }
@@ -268,7 +230,38 @@ export const MyEditor = {
     insertDownTableRow(editor) {
         const isActive = isTableInsertActive(editor);
         if (isActive) {
-
+            const { selection } = editor;
+            if (selection) {
+                const [table] = Editor.nodes(editor, {
+                    match: n => n.type === 'table',
+                });
+                if (table) {
+                    const [, tablePath] = table;
+                    const [tableRow] = Editor.nodes(editor, {
+                        match: n => n.type === 'table-row',
+                    });
+                    if (tableRow) {
+                        const [, tableRowPath] = tableRow;
+                        const [firstTableRow] = Editor.nodes(editor, {
+                            at: tablePath,
+                            match: n => n.type === 'table-row' && n.children.some(item => item.type === 'table-cell'),
+                        });
+                        const maxCols = firstTableRow[0].children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
+                        const nextRow = Editor.next(editor, {
+                            at: tableRowPath,
+                            match: n => n.type === 'table-row',
+                        });
+                        if (nextRow) {
+                            insertTableRow(editor, { maxCols, row: nextRow });
+                        } else {
+                            tableRowPath.push(tableRowPath.pop() + 1);
+                            Transforms.insertNodes(editor, createTableRowElement(maxCols), {
+                                at: tableRowPath,
+                            });
+                        }
+                    }
+                }
+            }
         }
     },
     insertLeftTableCol(editor) {
@@ -284,3 +277,47 @@ export const MyEditor = {
         }
     },
 };
+
+const insertTableRow = (editor, { maxCols, row }) => {
+    const [rowElement, rowPath] = row;
+    const currentCols = rowElement.children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
+    Transforms.insertNodes(editor, createTableRowElement(currentCols), {
+        at: rowPath,
+    });
+    console.log(rowPath, rowElement);
+    for (let i = currentCols; i < maxCols; i++) {
+        const maxCount = 1000;
+        let count = 0;
+        let rowSpan = 2;
+        let currentPath = rowPath;
+        while(currentPath && count < maxCount) {
+            const prevRow = Editor.previous(editor, {
+                at: currentPath,
+                match: n => n.type === 'table-row',
+            });
+            if (prevRow) {
+                const [, path] = prevRow;
+                const [cell] = Editor.nodes(editor, {
+                    at: path,
+                    match: n => n.type === 'table-cell' && n.rowSpan >= rowSpan,
+                });
+                if (cell) {
+                    const [cellElement, cellPath] = cell;
+                    Transforms.setNodes(editor, {
+                        rowSpan: cellElement.rowSpan + 1,
+                    }, {
+                        at: cellPath,
+                    });
+                    currentPath = null;
+                } else {
+                    currentPath = path;
+                    rowSpan++;
+                }
+            } else {
+                currentPath = null;
+                console.error('没有找到上一个节点');
+            }
+            count++;
+        }
+    }
+}
