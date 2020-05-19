@@ -41,6 +41,22 @@ export const BlockButton = ({ format, icon, ...props }) => {
                     MyEditor.splitTableCells(editor);
                     return
                 }
+                if (format === 'table-row-insert-up') {
+                    MyEditor.insertUpTableRow(editor);
+                    return   
+                }
+                if (format === 'table-row-insert-down') {
+                    MyEditor.insertDownTableRow(editor);
+                    return
+                }
+                if (format === 'table-col-insert-left') {
+                    MyEditor.insertLeftTableCol(editor);
+                    return
+                }
+                if (format === 'table-col-insert-right') {
+                    MyEditor.insertRightTableCol(editor);
+                    return
+                }
                 MyEditor.toggleBlock(editor, format)
             }}
         >
