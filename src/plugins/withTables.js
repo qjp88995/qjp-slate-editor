@@ -2,7 +2,7 @@ import { Range, Editor, Point, Transforms } from "slate"
 import { createDefaultElement } from "../helpers"
 
 export const withTables = (editor) => {
-    const { deleteBackward, deleteForward, insertBreak, deleteFragment, onChange } = editor
+    const { deleteBackward, deleteForward, insertBreak, deleteFragment } = editor;
 
     editor.deleteBackward = (unit) => {
         const { selection } = editor

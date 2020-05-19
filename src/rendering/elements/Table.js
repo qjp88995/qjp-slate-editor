@@ -26,8 +26,11 @@ export const Table = props => {
 
 export const TableRow = props => {
     const { children, attributes, element } = props;
+    const isEmpty = !Array.isArray(element.children) || !element.children.some(item => item.type === 'table-cell');
     return (
-        <tr {...attributes}>{children}</tr>
+        <tr {...attributes}>
+            {!isEmpty && children}
+        </tr>
     );
 };
 

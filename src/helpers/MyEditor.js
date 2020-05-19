@@ -95,18 +95,6 @@ export const MyEditor = {
                 match: n => n.type === 'table',
             });
             if (table) {
-                const [firstTableRow] = Editor.nodes(editor, {
-                    at: table[1],
-                    match: n => n.type === 'table-row',
-                });
-                const [...firstTableRowCells] = Editor.nodes(editor, {
-                    at: firstTableRow[1],
-                    match: n => n.type === 'table-cell',
-                });
-                const maxColSpan = firstTableRowCells.reduce((total, item) => {
-                    const [element] = item;
-                    return total + Number((element.colSpan || 1));
-                }, 0);
                 const [...cells] = Editor.nodes(editor, {
                     at: table[1],
                     match: n => n.type === 'table-cell' && n.selected,
@@ -131,40 +119,30 @@ export const MyEditor = {
                 }, 0);
                 const [cell, ...otherCells] = cells;
                 Transforms.setNodes(editor, {
-                    rowSpan: maxColSpan === colSpan ? 1 : rowSpan,
+                    rowSpan,
                     colSpan,
                     selected: false,
                 }, {
                     at: cell[1],
                 });
-                const children = [];
-                const [lastNode] = Editor.nodes(editor, {
-                    at: cell[1],
-                    match: n => n.type === 'paragraph',
-                    reverse: true,
-                });
-                const lastNodePath = [...lastNode[1]];
-                lastNodePath.push(lastNodePath.pop() + 1);
-                otherCells.forEach(([elem]) => {
-                    children.push(...elem.children);
-                });
-                Transforms.insertNodes(editor, children, {
-                    at: lastNodePath,
+                otherCells.forEach(([elem, path]) => {
+                    const [lastNode] = Editor.nodes(editor, {
+                        at: cell[1],
+                        match: n => n.type === 'paragraph',
+                        reverse: true,
+                    });
+                    const lastNodePath = [...lastNode[1]];
+                    lastNodePath.push(lastNodePath.pop() + 1);
+                    Transforms.moveNodes(editor, {
+                        at: path,
+                        match: n => n.type === 'paragraph',
+                        to: lastNodePath,
+                    });
                 });
                 otherCells.reverse().forEach(([, path]) => {
-                    const [tableRow] = Editor.nodes(editor, { at: path, match: n => n.type === 'table-row' });
-                    if (tableRow) {
-                        const [rowElement, rowPath] = tableRow;
-                        if (rowElement.children.length === 1) {
-                            Transforms.removeNodes(editor, {
-                                at: rowPath,
-                            });
-                        } else {
-                            Transforms.removeNodes(editor, {
-                                at: path,
-                            });
-                        }
-                    }
+                    Transforms.removeNodes(editor, {
+                        at: path,
+                    });
                 });
                 const point = Editor.point(editor, cell[1]);
                 Transforms.setPoint(editor, point, { edge: 'anchor' });
@@ -172,6 +150,33 @@ export const MyEditor = {
         }
     },
     splitTableCells(editor) {
-
+        const [...cells] = Editor.nodes(editor, {
+            match: n => n.type === 'table-cell' && (n.rowSpan > 1 || n.colSpan > 1),
+            reverse: true,
+        });
+        cells.forEach(([cellEmelent, cellPath]) => {
+            const { rowSpan, colSpan } = cellEmelent;
+            const colPath = cellPath.pop(), rowPath = cellPath.pop();
+            const cellPaths = [];
+            for (let i = 0; i < rowSpan; i++) {
+                for (let j = 0; j < colSpan; j++) {
+                    cellPaths.push([...cellPath, rowPath + i, colPath + j]);
+                }
+            }
+            Transforms.setNodes(editor, {
+                rowSpan: 1,
+                colSpan: 1,
+            }, {
+                at: cellPaths.shift(),
+            });
+            cellPaths.forEach(path => {
+                Transforms.insertNodes(editor, {
+                    type: 'table-cell',
+                    children: [ createDefaultElement() ],
+                }, {
+                    at: path,
+                })
+            });
+        })
     },
 };
