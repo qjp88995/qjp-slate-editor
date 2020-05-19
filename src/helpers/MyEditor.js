@@ -212,16 +212,16 @@ export const MyEditor = {
                 });
                 if (table) {
                     const [, tablePath] = table;
-                    const [tableRow] = Editor.nodes(editor, {
+                    const [row] = Editor.nodes(editor, {
                         match: n => n.type === 'table-row',
                     });
-                    if (tableRow) {
-                        const [firstTableRow] = Editor.nodes(editor, {
+                    if (row) {
+                        const [firstRow] = Editor.nodes(editor, {
                             at: tablePath,
                             match: n => n.type === 'table-row' && n.children.some(item => item.type === 'table-cell'),
                         });
-                        const maxCols = firstTableRow[0].children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
-                        insertTableRow(editor, { maxCols, row: tableRow });
+                        const maxCols = firstRow[0].children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
+                        insertTableRow(editor, { maxCols, row });
                     }
                 }
             }
@@ -237,26 +237,31 @@ export const MyEditor = {
                 });
                 if (table) {
                     const [, tablePath] = table;
-                    const [tableRow] = Editor.nodes(editor, {
+                    const [row] = Editor.nodes(editor, {
                         match: n => n.type === 'table-row',
                     });
-                    if (tableRow) {
-                        const [, tableRowPath] = tableRow;
-                        const [firstTableRow] = Editor.nodes(editor, {
+                    if (row) {
+                        const [, rowPath] = row;
+                        const [firstRow] = Editor.nodes(editor, {
                             at: tablePath,
                             match: n => n.type === 'table-row' && n.children.some(item => item.type === 'table-cell'),
                         });
-                        const maxCols = firstTableRow[0].children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
+                        const maxCols = firstRow[0].children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
+                        const [cell] = Editor.nodes(editor, {
+                            match: n => n.type === 'table-cell',
+                        });
+                        const rowSpan = cell[0].rowSpan;
+                        if (rowSpan > 1) rowPath.push(rowPath.pop() + rowSpan - 1);
                         const nextRow = Editor.next(editor, {
-                            at: tableRowPath,
+                            at: rowPath,
                             match: n => n.type === 'table-row',
                         });
                         if (nextRow) {
                             insertTableRow(editor, { maxCols, row: nextRow });
                         } else {
-                            tableRowPath.push(tableRowPath.pop() + 1);
+                            rowPath.push(rowPath.pop() + 1);
                             Transforms.insertNodes(editor, createTableRowElement(maxCols), {
-                                at: tableRowPath,
+                                at: rowPath,
                             });
                         }
                     }
@@ -284,7 +289,6 @@ const insertTableRow = (editor, { maxCols, row }) => {
     Transforms.insertNodes(editor, createTableRowElement(currentCols), {
         at: rowPath,
     });
-    console.log(rowPath, rowElement);
     for (let i = currentCols; i < maxCols; i++) {
         const maxCount = 1000;
         let count = 0;
