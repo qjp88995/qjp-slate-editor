@@ -3,6 +3,7 @@ import { Slate, Editable, withReact } from 'slate-react';
 import { createEditor } from 'slate';
 import { withHistory } from 'slate-history';
 import { css } from 'emotion';
+import { BoldOutlined, ItalicOutlined, UnderlineOutlined, CodeOutlined, OrderedListOutlined, UnorderedListOutlined, TableOutlined, MergeCellsOutlined, SplitCellsOutlined } from '@ant-design/icons';
 import { Toolbar, MarkButton, BlockButton, CreateTableButton } from './components';
 import { elements, leaves } from './rendering';
 import { withTables } from './plugins';
@@ -31,21 +32,22 @@ const App = props => {
     return (
         <Slate editor={editor} value={value} onChange={onChange}>
             <Toolbar>
-                <MarkButton format='bold' icon='format_bold' title='粗体' />
-                <MarkButton format='italic' icon='format_italic' title='斜体' />
-                <MarkButton format='underline' icon='format_underlined' title='下划线' />
-                <MarkButton format='code' icon='code' title='代码' />
-                <BlockButton format='heading-1' icon='looks_one' title='一级标题' />
-                <BlockButton format='heading-2' icon='looks_two' title='二级标题' />
-                <BlockButton format='heading-3' icon='looks_3' title='三级标题' />
-                <BlockButton format='heading-4' icon='looks_4' title='四级标题' />
-                <BlockButton format='heading-5' icon='looks_5' title='五级标题' />
-                <BlockButton format='heading-6' icon='looks_6' title='六级标题' />
-                <BlockButton format='blockquote' icon='format_quote' title='引用' />
-                <BlockButton format='numbered-list' icon='format_list_numbered' title='有序列表' />
-                <BlockButton format='bulleted-list' icon='format_list_bulleted' title='无序列表' />
-                <CreateTableButton icon='table_chart' title='表格' />
-                <BlockButton format='table-cell-merge' icon='select_all' title='合并单元格' />
+                <MarkButton format='bold' icon={(<BoldOutlined />)} title='粗体' />
+                <MarkButton format='italic' icon={(<ItalicOutlined />)} title='斜体' />
+                <MarkButton format='underline' icon={(<UnderlineOutlined />)} title='下划线' />
+                <MarkButton format='code' icon={(<CodeOutlined />)} title='代码' />
+                <BlockButton format='heading-1' icon='H1' title='一级标题' />
+                <BlockButton format='heading-2' icon='H2' title='二级标题' />
+                <BlockButton format='heading-3' icon='H3' title='三级标题' />
+                <BlockButton format='heading-4' icon='H4' title='四级标题' />
+                <BlockButton format='heading-5' icon='H5' title='五级标题' />
+                <BlockButton format='heading-6' icon='H6' title='六级标题' />
+                <BlockButton format='blockquote' icon='引用' title='引用' />
+                <BlockButton format='numbered-list' icon={(<OrderedListOutlined />)} title='有序列表' />
+                <BlockButton format='bulleted-list' icon={(<UnorderedListOutlined />)} title='无序列表' />
+                <CreateTableButton icon={(<TableOutlined />)} title='表格' />
+                <BlockButton format='table-cell-merge' icon={(<MergeCellsOutlined />)} title='合并单元格' />
+                <BlockButton format='table-cell-split' icon={(<SplitCellsOutlined />)} title='拆分单元格' />
             </Toolbar>
             <Editable
                 className={css`height: 600px; overflow: auto; padding: 10px;`}

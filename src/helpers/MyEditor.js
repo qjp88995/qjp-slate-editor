@@ -1,4 +1,4 @@
-import { Editor, Transforms } from 'slate';
+import { Editor, Transforms, Range } from 'slate';
 
 export const createDefaultElement = (text = '') => {
     return { type: 'paragraph', children: [{ text }] };
@@ -19,9 +19,12 @@ export const isBlockActive = (editor, format) => {
     if (format === 'table-cell-merge') {
         return isTableCellMergeActive(editor);
     }
+    if (format === 'table-cell-split') {
+        return isTableCellSplitActive(editor);
+    }
     const [match] = Editor.nodes(editor, {
         match: (n) => n.type === format
-    })
+    });
 
     return !!match
 };
@@ -37,6 +40,13 @@ export const isTableCellMergeActive = editor => {
         match: n => n.type === 'table-cell' && n.selected,
     });
     return cells.length > 1;
+};
+
+export const isTableCellSplitActive = editor => {
+    const [...cells] = Editor.nodes(editor, {
+        match: n => n.type === 'table-cell' && (n.rowSpan > 1 || n.colSpan > 1),
+    });
+    return cells.length > 0;
 };
 
 export const LIST_TYPES = ['numbered-list', 'bulleted-list'];
@@ -73,7 +83,7 @@ export const MyEditor = {
     insertTable(editor, rows = 1, cols = 1) {
         Transforms.insertNodes(editor, [createTableElement(rows, cols), createDefaultElement()]);
     },
-    mergeTableCell(editor) {
+    mergeTableCells(editor) {
         const isActive = isTableCellMergeActive(editor);
         if (isActive) {
             const [firstCell] = Editor.nodes(editor, {
@@ -160,5 +170,8 @@ export const MyEditor = {
                 Transforms.setPoint(editor, point, { edge: 'anchor' });
             }
         }
-    }
+    },
+    splitTableCells(editor) {
+
+    },
 };

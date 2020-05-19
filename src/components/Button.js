@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { cx, css } from 'emotion';
 import { useSlate } from 'slate-react';
 import { isMarkActive, isBlockActive, MyEditor } from '../helpers';
-import { Icon } from './Icon';
 
 export const Button = React.forwardRef(
     ({ className, active, reversed, ...props }, ref) => (
@@ -35,13 +34,17 @@ export const BlockButton = ({ format, icon, ...props }) => {
             onMouseDown={(event) => {
                 event.preventDefault()
                 if (format === 'table-cell-merge') {
-                    MyEditor.mergeTableCell(editor);
+                    MyEditor.mergeTableCells(editor);
+                    return
+                }
+                if (format === 'table-cell-split') {
+                    MyEditor.splitTableCells(editor);
                     return
                 }
                 MyEditor.toggleBlock(editor, format)
             }}
         >
-            <Icon>{icon}</Icon>
+            {icon}
         </Button>
     )
 }
@@ -57,7 +60,7 @@ export const MarkButton = ({ format, icon, ...props }) => {
                 MyEditor.toggleMark(editor, format)
             }}
         >
-            <Icon>{icon}</Icon>
+            {icon}
         </Button>
     )
 }
@@ -106,7 +109,7 @@ export const CreateTableButton = ({ icon, ...props }) => {
             disabled={active}
             onMouseDown={onButtonMousDown}
         >
-            <Icon>{icon}</Icon>
+            {icon}
             <div
                 className={css`
                     position: absolute;
