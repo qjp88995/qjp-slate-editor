@@ -17,9 +17,10 @@ export const Table = props => {
             padding: 5px;
         }
     `;
+    const isEmpty = !Array.isArray(element.children) || !element.children.some(item => item.type === 'table-row');
     return (
         <table {...attributes} className={className}>
-            <tbody>{children}</tbody>
+            <tbody>{!isEmpty && children}</tbody>
         </table>
     );
 };

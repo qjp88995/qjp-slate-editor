@@ -297,10 +297,16 @@ export const MyEditor = {
                 if (table) {
                     const [, tablePath] = table;
                     // 统计第一行有多少格
-                    const [firstRow] = Editor.nodes(editor, {
+                    const [firstRow, ...otherRows] = Editor.nodes(editor, {
                         at: tablePath,
                         match: n => n.type === 'table-row',
                     });
+                    if (otherRows.length === 0 || otherRows.every(([element]) => Array.isArray(element.children) && element.children.filter(item => item.type === 'table-cell').length === 0)) {
+                        Transforms.removeNodes(editor, {
+                            at: tablePath,
+                        });
+                        return;
+                    }
                     if (firstRow) {
                         const [firstRowElement] = firstRow;
                         const maxCols = firstRowElement.children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
