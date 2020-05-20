@@ -434,47 +434,79 @@ export const MyEditor = {
                             });
                             return;
                         }
-                        const [cell] = Editor.nodes(editor, {
+                        const [currentCell] = Editor.nodes(editor, {
                             match: n => n.type === 'table-cell',
                         });
-                        const [row] = Editor.nodes(editor, {
-                            match: n => n.type === 'table-row',
-                        });
-                        if (cell && row) {
-                            const [cellElement, cellPath] = cell;
-                            const [, rowPath] = row;
-                            const rowSpan = Number(cellElement.rowSpan || 1);
-                            const colSpan = Number(cellElement.colSpan || 1);
-                            // const [...cells] = Editor.nodes(editor, {
-                            //     at: rowPath,
-                            //     match: n => n.type === 'table-cell',
-                            // });
-                            // const cols = cells.reduce((total, [element]) => {
-                            //     return total + Number(element.colSpan || 1);
-                            // }, 0);
-                            rows.forEach(([element, path]) => {
-                                const deposit = new Array(maxCols).fill(0);
+                        if (currentCell) {
+                            const [, currentCellPath] = currentCell;
+                            const deposit = new Array(maxCols).fill(0);
+                            const grids = [];
+                            rows.forEach(([, rowPath]) => {
                                 const [...cells] = Editor.nodes(editor, {
-                                    at: path,
+                                    at: rowPath,
                                     match: n => n.type === 'table-cell',
                                 });
-                                let pointer = 0;
-                                const cls = cells.map(([elem, pt]) => {
-                                    let offset = 0;
-                                    const col = Number(elem.colSpan || 1);
-                                    for (let i = 0; i < col; i++) {
-                                        if (deposit[pointer] === 0) {
-                                            deposit[pointer] += (Number(elem.rowSpan || 1) - 1);
+                                for(let i = 0, j = 0; i < deposit.length;) {
+                                    if (deposit[i] === 0) {
+                                        if (cells[j]) {
+                                            const [cellElement, cellPath] = cells[j];
+                                            const rowSpan = Number(cellElement.rowSpan || 1);
+                                            const colSpan = Number(cellElement.colSpan || 1);
+                                            grids.push([cellPath, i, colSpan, rowSpan]);
+                                            j++;
+                                            for (let k = 0; k < colSpan; k++) {
+                                                deposit[i] = rowSpan - 1;
+                                                i++;
+                                            }
                                         } else {
-                                            offset++;
-                                            deposit[pointer] -= 1;
+                                            i++;
                                         }
-                                        pointer++;
+                                    } else {
+                                        deposit[i]--;
+                                        i++;
                                     }
-                                    return [offset, pt];
-                                });
-                                console.log(cls);
+                                }
                             });
+                            const currentGrid = grids.find(item => item[0].toString() === currentCellPath.toString());
+                            if (currentGrid) {
+                                const [, currentGridOffset, currentGridColSpan] = currentGrid;
+                                grids.filter(([, offset, colSpan]) => offset === currentGridOffset || (offset > currentGridOffset && offset < currentGridOffset + currentGridColSpan) || (currentGridOffset > offset && currentGridOffset < offset + colSpan))
+                                .reverse()
+                                .forEach(([path, offset, colSpan, rowSpan]) => {
+                                    if (offset === currentGridOffset) {
+                                        if (colSpan > currentGridColSpan) {
+                                            const nextPath = [...path];
+                                            nextPath.push(nextPath.pop() + 1);
+                                            Transforms.insertNodes(editor, createTableCellElement({
+                                                rowSpan,
+                                                colSpan: colSpan - currentGridColSpan,
+                                            }), {
+                                                at: nextPath,
+                                            });
+                                        }
+                                        Transforms.removeNodes(editor, { at: path });
+                                    } else if (offset > currentGridOffset) {
+                                        if (offset + colSpan > currentGridOffset + currentGridColSpan) {
+                                            const nextPath = [...path];
+                                            nextPath.push(nextPath.pop() + 1);
+                                            Transforms.insertNodes(editor, createTableCellElement({
+                                                rowSpan,
+                                                colSpan: (offset + colSpan) - (currentGridOffset + currentGridColSpan),
+                                            }), {
+                                                at: nextPath,
+                                            })
+                                        }
+                                        Transforms.removeNodes(editor, { at: path });
+                                    } else {
+                                        const newColSpan = offset + colSpan > currentGridOffset + currentGridColSpan ? colSpan - currentGridColSpan : currentGridOffset - offset;
+                                        Transforms.setNodes(editor, {
+                                            colSpan: newColSpan,
+                                        }, {
+                                            at: path,
+                                        });
+                                    }
+                                });
+                            }
                         }
                     }
                 }
