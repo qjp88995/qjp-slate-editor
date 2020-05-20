@@ -413,7 +413,72 @@ export const MyEditor = {
     deleteTableCol(editor) {
         const isActive = isTableActionActive(editor);
         if (isActive) {
-            console.log('删除表格列');
+            const { selection } = editor;
+            if (selection) {
+                const [table] = Editor.nodes(editor, {
+                    match: n => n.type === 'table',
+                });
+                if (table) {
+                    const [, tablePath] = table;
+                    // 统计第一行有多少格
+                    const [...rows] = Editor.nodes(editor, {
+                        at: tablePath,
+                        match: n => n.type === 'table-row',
+                    });
+                    if (rows.length > 0) {
+                        const [firstRowElement] = rows[0];
+                        const maxCols = firstRowElement.children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
+                        if (maxCols === 1) {
+                            Transforms.removeNodes(editor, {
+                                at: tablePath,
+                            });
+                            return;
+                        }
+                        const [cell] = Editor.nodes(editor, {
+                            match: n => n.type === 'table-cell',
+                        });
+                        const [row] = Editor.nodes(editor, {
+                            match: n => n.type === 'table-row',
+                        });
+                        if (cell && row) {
+                            const [cellElement, cellPath] = cell;
+                            const [, rowPath] = row;
+                            const rowSpan = Number(cellElement.rowSpan || 1);
+                            const colSpan = Number(cellElement.colSpan || 1);
+                            // const [...cells] = Editor.nodes(editor, {
+                            //     at: rowPath,
+                            //     match: n => n.type === 'table-cell',
+                            // });
+                            // const cols = cells.reduce((total, [element]) => {
+                            //     return total + Number(element.colSpan || 1);
+                            // }, 0);
+                            rows.forEach(([element, path]) => {
+                                const deposit = new Array(maxCols).fill(0);
+                                const [...cells] = Editor.nodes(editor, {
+                                    at: path,
+                                    match: n => n.type === 'table-cell',
+                                });
+                                let pointer = 0;
+                                const cls = cells.map(([elem, pt]) => {
+                                    let offset = 0;
+                                    const col = Number(elem.colSpan || 1);
+                                    for (let i = 0; i < col; i++) {
+                                        if (deposit[pointer] === 0) {
+                                            deposit[pointer] += (Number(elem.rowSpan || 1) - 1);
+                                        } else {
+                                            offset++;
+                                            deposit[pointer] -= 1;
+                                        }
+                                        pointer++;
+                                    }
+                                    return [offset, pt];
+                                });
+                                console.log(cls);
+                            });
+                        }
+                    }
+                }
+            }
         }
     }
 };
