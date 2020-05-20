@@ -176,8 +176,8 @@ export const MyEditor = {
                 match: n => n.type === 'table-cell' && (n.rowSpan > 1 || n.colSpan > 1),
                 reverse: true,
             });
-            cells.forEach(([cellEmelent, cellPath]) => {
-                const { rowSpan, colSpan } = cellEmelent;
+            cells.forEach(([cellElement, cellPath]) => {
+                const { rowSpan, colSpan } = cellElement;
                 const colPath = cellPath.pop(), rowPath = cellPath.pop();
                 const cellPaths = [];
                 for (let i = 0; i < rowSpan; i++) {
@@ -272,13 +272,13 @@ export const MyEditor = {
     insertLeftTableCol(editor) {
         const isActive = isTableInsertActive(editor);
         if (isActive) {
-            console.log('向左插入一列');
+            insertTableCol(editor, 'left');
         }
     },
     insertRightTableCol(editor) {
         const isActive = isTableInsertActive(editor);
         if (isActive) {
-            console.log('向右插入一列');
+            insertTableCol(editor, 'right');
         }
     },
 };
@@ -322,6 +322,74 @@ const insertTableRow = (editor, { maxCols, row }) => {
                 console.error('没有找到上一个节点');
             }
             count++;
+        }
+    }
+};
+
+const insertTableCol = (editor, mode = 'left') => {
+    const { selection } = editor;
+    if (selection) {
+        const [table] = Editor.nodes(editor, {
+            match: n => n.type === 'table',
+        });
+        if (table) {
+            const [, tablePath] = table;
+            const [...rows] = Editor.nodes(editor, {
+                at: tablePath,
+                match: n => n.type === 'table-row',
+            });
+            const [currentCell] = Editor.nodes(editor, {
+                match: n => n.type === 'table-cell',
+            });
+            const [currentRow] = Editor.nodes(editor, {
+                match: n => n.type === 'table-row',
+            });
+            if (currentCell && currentRow) {
+                const [, currentCellPath] = currentCell;
+                const colPath = mode === 'left' ? currentCellPath.pop() : currentCellPath.pop() + 1; // 要插入单元格横向的路径
+                const [, currentRowPath] = currentRow;
+                const [...currentRowCells] = Editor.nodes(editor, {
+                    at: currentRowPath,
+                    match: n => n.type === 'table-cell',
+                });
+                const colSpans = currentRowCells.reduce((total, [element, path]) => { // 当前单元格之前的总格数
+                    if (path.pop() < colPath) return total + Number(element.colSpan || 1);
+                    return total;
+                }, 0);
+                rows.forEach(([, path]) => {
+                    if (colSpans > 0) {
+                        const [...cells] = Editor.nodes(editor, {
+                            at: path,
+                            match: n => n.type === 'table-cell',
+                        });
+                        let spans = 0; // 循环当前行返回值之前的总格数
+                        const cell = cells.find(([cellElement]) => {
+                            spans = spans + Number(cellElement.colSpan || 1);
+                            return spans >= colSpans;
+                        });
+                        if (cell) {
+                            const [cellElement, cellPath] = cell;
+                            if (spans > colSpans) {
+                                Transforms.setNodes(editor, {
+                                    colSpan: Number(cellElement.colSpan || 1) + 1,
+                                }, {
+                                    at: cellPath,
+                                });
+                            } else {
+                                cellPath.push(cellPath.pop() + 1);
+                                Transforms.insertNodes(editor, createTableCellElement(), {
+                                    at: cellPath,
+                                });
+                            }
+                        }
+                    } else {
+                        path.push(colPath)
+                        Transforms.insertNodes(editor, createTableCellElement(), {
+                            at: path,
+                        });
+                    }
+                });
+            }
         }
     }
 }
