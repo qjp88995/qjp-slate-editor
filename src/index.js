@@ -3,7 +3,7 @@ import { Slate, Editable, withReact } from 'slate-react';
 import { createEditor } from 'slate';
 import { withHistory } from 'slate-history';
 import { css } from 'emotion';
-import { BoldOutlined, ItalicOutlined, UnderlineOutlined, CodeOutlined, OrderedListOutlined, UnorderedListOutlined, TableOutlined, MergeCellsOutlined, SplitCellsOutlined, InsertRowAboveOutlined, InsertRowBelowOutlined, InsertRowLeftOutlined, InsertRowRightOutlined } from '@ant-design/icons';
+import { BoldOutlined, ItalicOutlined, UnderlineOutlined, CodeOutlined, OrderedListOutlined, UnorderedListOutlined, TableOutlined, MergeCellsOutlined, SplitCellsOutlined, InsertRowAboveOutlined, InsertRowBelowOutlined, InsertRowLeftOutlined, InsertRowRightOutlined, DeleteRowOutlined, DeleteColumnOutlined } from '@ant-design/icons';
 import { Toolbar, MarkButton, BlockButton, CreateTableButton } from './components';
 import { elements, leaves } from './rendering';
 import { withTables } from './plugins';
@@ -52,6 +52,8 @@ const App = props => {
                 <BlockButton format='table-row-insert-down' icon={(<InsertRowBelowOutlined />)} title='向下插入行' />
                 <BlockButton format='table-col-insert-left' icon={(<InsertRowLeftOutlined />)} title='向左插入列' />
                 <BlockButton format='table-col-insert-right' icon={(<InsertRowRightOutlined />)} title='向右插入列' />
+                <BlockButton format='table-row-delete' icon={(<DeleteRowOutlined />)} title='删除行' />
+                <BlockButton format='table-col-delete' icon={(<DeleteColumnOutlined />)} title='删除列' />
             </Toolbar>
             <Editable
                 className={css`height: 600px; overflow: auto; padding: 10px;`}

@@ -57,6 +57,14 @@ export const BlockButton = ({ format, icon, ...props }) => {
                     MyEditor.insertRightTableCol(editor);
                     return
                 }
+                if (format === 'table-row-delete') {
+                    MyEditor.deleteTableRow(editor);
+                    return
+                }
+                if (format === 'table-col-delete') {
+                    MyEditor.deleteTableCol(editor);
+                    return
+                }
                 MyEditor.toggleBlock(editor, format)
             }}
         >

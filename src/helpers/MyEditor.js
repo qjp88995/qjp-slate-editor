@@ -1,21 +1,24 @@
 import { Editor, Transforms } from 'slate';
 
-export const createDefaultElement = (text = '') => {
-    return { type: 'paragraph', children: [{ text }] };
+export const createDefaultElement = (text = '', attr = {}) => {
+    return { type: 'paragraph', ...attr, children: [{ text }] };
 }
 
-export const createTableElement = (rows = 1, cols = 1) => ({
+export const createTableElement = (rows = 1, cols = 1, attr = {}) => ({
     type: 'table',
+    ...attr,
     children: new Array(rows).fill(null).map(() => createTableRowElement(cols))
 });
 
-export const createTableRowElement = (cols = 1) => ({
+export const createTableRowElement = (cols = 1, attr = {}) => ({
     type: 'table-row',
+    ...attr,
     children: new Array(cols).fill(null).map(() => createTableCellElement())
 });
 
-export const createTableCellElement = () => ({
+export const createTableCellElement = (attr = {}) => ({
     type: 'table-cell',
+    ...attr,
     children: [ createDefaultElement() ],
 });
 
@@ -26,14 +29,16 @@ export const isBlockActive = (editor, format) => {
     if (format === 'table-cell-split') {
         return isTableCellSplitActive(editor);
     }
-    const tableInsertFormat = [
+    const tableActionFormat = [
         'table-row-insert-up',
         'table-row-insert-down',
         'table-col-insert-left',
         'table-col-insert-right',
+        'table-row-delete',
+        'table-col-delete',
     ];
-    if (tableInsertFormat.some(item => item === format)) {
-        return isTableInsertActive(editor);
+    if (tableActionFormat.some(item => item === format)) {
+        return isTableActionActive(editor);
     }
     const [match] = Editor.nodes(editor, {
         match: (n) => n.type === format
@@ -62,7 +67,7 @@ export const isTableCellSplitActive = editor => {
     return cells.length > 0;
 };
 
-export const isTableInsertActive = editor => {
+export const isTableActionActive = editor => {
     const [table] = Editor.nodes(editor, {
         match: n => n.type === 'table',
     });
@@ -203,7 +208,7 @@ export const MyEditor = {
         }
     },
     insertUpTableRow(editor) {
-        const isActive = isTableInsertActive(editor);
+        const isActive = isTableActionActive(editor);
         if (isActive) {
             const { selection } = editor;
             if (selection) {
@@ -228,7 +233,7 @@ export const MyEditor = {
         }
     },
     insertDownTableRow(editor) {
-        const isActive = isTableInsertActive(editor);
+        const isActive = isTableActionActive(editor);
         if (isActive) {
             const { selection } = editor;
             if (selection) {
@@ -270,17 +275,141 @@ export const MyEditor = {
         }
     },
     insertLeftTableCol(editor) {
-        const isActive = isTableInsertActive(editor);
+        const isActive = isTableActionActive(editor);
         if (isActive) {
             insertTableCol(editor, 'left');
         }
     },
     insertRightTableCol(editor) {
-        const isActive = isTableInsertActive(editor);
+        const isActive = isTableActionActive(editor);
         if (isActive) {
             insertTableCol(editor, 'right');
         }
     },
+    deleteTableRow(editor) {
+        const isActive = isTableActionActive(editor);
+        if (isActive) {
+            const { selection } = editor;
+            if (selection) {
+                const [table] = Editor.nodes(editor, {
+                    match: n => n.type === 'table',
+                });
+                if (table) {
+                    const [, tablePath] = table;
+                    // 统计第一行有多少格
+                    const [firstRow] = Editor.nodes(editor, {
+                        at: tablePath,
+                        match: n => n.type === 'table-row',
+                    });
+                    if (firstRow) {
+                        const [firstRowElement] = firstRow;
+                        const maxCols = firstRowElement.children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
+                        const [cell] = Editor.nodes(editor, {
+                            match: n => n.type === 'table-cell',
+                        });
+                        const [row] = Editor.nodes(editor, {
+                            match: n => n.type === 'table-row',
+                        });
+                        if (row && cell) {
+                            const [cellElement] = cell;
+                            const [, rowPath] = row;
+                            const rowSpan = Number(cellElement.rowSpan || 1);
+                            for(let i = 0; i < rowSpan; i++) {
+                                const currentRowPath = [...rowPath];
+                                currentRowPath.push(currentRowPath.pop() + i);
+                                const [currentRow] = Editor.nodes(editor, {
+                                    at: currentRowPath,
+                                    match: n => n.type === 'table-row',
+                                });
+                                if (currentRow) {
+                                    const [currentRowElement] = currentRow;
+                                    const currentMaxCols = currentRowElement.children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
+                                    if (currentMaxCols < maxCols) {
+                                        const maxCount = 1000;
+                                        let fixCols = maxCols - currentMaxCols, count = 0, limitRowSpan = 2;
+                                        while (fixCols > 0 && count < maxCount) {
+                                            const prevRow = Editor.previous(editor, {
+                                                at: currentRowPath,
+                                                match: n => n.type === 'table-row',
+                                            });
+                                            if (prevRow) {
+                                                const [, prevRowPath] = prevRow;
+                                                const [...prevCells] = Editor.nodes(editor, {
+                                                    at: prevRowPath,
+                                                    match: n => n.type === 'table-cell' && n.rowSpan >= limitRowSpan,
+                                                });
+                                                prevCells.forEach(([element, path]) => {
+                                                    Transforms.setNodes(editor, {
+                                                        rowSpan: element.rowSpan - 1,
+                                                    }, {
+                                                        at: path,
+                                                    });
+                                                    fixCols-=Number(element.colSpan || 1);
+                                                });
+                                            }
+                                            count++;
+                                        }
+                                    }
+                                    const [...currentCells] = Editor.nodes(editor, {
+                                        at: currentRowPath,
+                                        match: n => n.type === 'table-cell',
+                                    });
+                                    currentCells.forEach(([currentCellElement, currentCellPath]) => {
+                                        const colSpans = currentCells.reduce((total, [element, path]) => {
+                                            if (currentCellPath[currentCellPath.length - 1] > path[path.length - 1]) return total + Number(element.colSpan || 1);
+                                            return total;
+                                        }, 0);
+                                        if (currentCellElement.rowSpan > 1) {
+                                            const nextRowPath = [...currentRowPath];
+                                            nextRowPath.push(nextRowPath.pop() + 1)
+                                            const [nextRow] = Editor.nodes(editor, {
+                                                at: nextRowPath,
+                                                match: n => n.type === 'table-row',
+                                            });
+                                            if (nextRow) {
+                                                const [...nextCells] = Editor.nodes(editor, {
+                                                    at: nextRowPath,
+                                                    match: n => n.type === 'table-cell',
+                                                });
+                                                let spans = 0;
+                                                const nextCell = nextCells.find(([element]) => {
+                                                    spans += Number(element.colSpan || 1);
+                                                    return spans === colSpans;
+                                                });
+                                                if (nextCell) {
+                                                    const [, nextCellPath] = nextCell;
+                                                    nextCellPath.push(nextCellPath.pop() + 1);
+                                                    Transforms.insertNodes(editor, createTableCellElement({
+                                                        rowSpan: currentCellElement.rowSpan - 1,
+                                                        colSpan: currentCellElement.colSpan,
+                                                    }), {
+                                                        at: nextCellPath,
+                                                    });
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                            for (let i = rowSpan; i > 0; i--) {
+                                const currentRowPath = [...rowPath];
+                                currentRowPath.push(currentRowPath.pop() + i - 1);
+                                Transforms.removeNodes(editor, {
+                                    at: currentRowPath,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    deleteTableCol(editor) {
+        const isActive = isTableActionActive(editor);
+        if (isActive) {
+            console.log('删除表格列');
+        }
+    }
 };
 
 const insertTableRow = (editor, { maxCols, row }) => {
@@ -364,7 +493,7 @@ const insertTableCol = (editor, mode = 'left') => {
                         });
                         let spans = 0; // 循环当前行返回值之前的总格数
                         const cell = cells.find(([cellElement]) => {
-                            spans = spans + Number(cellElement.colSpan || 1);
+                            spans += Number(cellElement.colSpan || 1);
                             return spans >= colSpans;
                         });
                         if (cell) {
