@@ -53,11 +53,11 @@ export const isMarkActive = (editor, format) => {
 };
 
 export const isTableCellMergeActive = editor => {
-    const [...cells] = Editor.nodes(editor, {
+    const [table] = Editor.nodes(editor, {
         at: [],
-        match: n => n.type === 'table-cell' && n.selected,
+        match: n => n.type === 'table' && !n.selectedFlag && !!n.pathSelection && n.pathSelection[0].toString() !== n.pathSelection[1].toString(),
     });
-    return cells.length > 1;
+    return !!table;
 };
 
 export const isTableCellSplitActive = editor => {
@@ -111,19 +111,17 @@ export const MyEditor = {
     mergeTableCells(editor) {
         const isActive = isTableCellMergeActive(editor);
         if (isActive) {
-            const [firstCell] = Editor.nodes(editor, {
-                at: [],
-                match: n => n.type === 'table-cell' && n.selected,
-            });
             const [table] = Editor.nodes(editor, {
-                at: firstCell[1],
-                match: n => n.type === 'table',
+                at: [],
+                match: n => n.type === 'table' && !n.selectedFlag && !!n.pathSelection && n.pathSelection[0].toString() !== n.pathSelection[1].toString(),
             });
             if (table) {
-                const [...cells] = Editor.nodes(editor, {
+                Transforms.setNodes(editor, {
+                    pathSelection: null,
+                }, {
                     at: table[1],
-                    match: n => n.type === 'table-cell' && n.selected,
                 });
+                const cells = this.getSelectedTableCells(editor, table);
                 const rows = [];
                 cells.forEach(item => {
                     const [, path] = item;
@@ -146,7 +144,6 @@ export const MyEditor = {
                 Transforms.setNodes(editor, {
                     rowSpan,
                     colSpan,
-                    selected: false,
                 }, {
                     at: cell[1],
                 });
@@ -512,7 +509,90 @@ export const MyEditor = {
                 }
             }
         }
-    }
+    },
+    getSelectedTableCells(editor, table) {
+        if (table) {
+            const [tableElement, tablePath] = table;
+            const { pathSelection } = tableElement;
+            const [...rows] = Editor.nodes(editor, {
+                at: tablePath,
+                match: n => n.type === 'table-row',
+            });
+            if (rows.length > 0 && pathSelection) {
+                const [startPath, endPath] = pathSelection;
+                if (startPath && endPath && startPath.toString() !== endPath.toString()) {
+                    const [firstRowElement] = rows[0];
+                    const maxCols = firstRowElement.children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
+                    const deposit = new Array(maxCols).fill(0);
+                    const grids = [];
+                    rows.forEach(([, rowPath]) => {
+                        const [...cells] = Editor.nodes(editor, {
+                            at: rowPath,
+                            match: n => n.type === 'table-cell',
+                        });
+                        for(let i = 0, j = 0; i < deposit.length;) {
+                            if (deposit[i] === 0) {
+                                if (cells[j]) {
+                                    const [cellElement, cellPath] = cells[j];
+                                    const rowSpan = Number(cellElement.rowSpan || 1);
+                                    const colSpan = Number(cellElement.colSpan || 1);
+                                    grids.push({
+                                        element: cellElement,
+                                        path: cellPath,
+                                        offset: i,
+                                        row: rowPath[rowPath.length - 1],
+                                        colSpan,
+                                        rowSpan,
+                                    });
+                                    j++;
+                                    for (let k = 0; k < colSpan; k++) {
+                                        deposit[i] = rowSpan - 1;
+                                        i++;
+                                    }
+                                } else {
+                                    i++;
+                                }
+                            } else {
+                                deposit[i]--;
+                                i++;
+                            }
+                        }
+                    });
+                    const startGrid = grids.find(item => item.path.toString() === startPath.toString());
+                    const endGrid = grids.find(item => item.path.toString() === endPath.toString());
+                    let minOffset = startGrid.offset > endGrid.offset ? endGrid.offset : startGrid.offset,
+                        maxOffset = startGrid.offset + startGrid.colSpan > endGrid.offset + endGrid.colSpan ? startGrid.offset + startGrid.colSpan : endGrid.offset + endGrid.colSpan,
+                        minRow = startGrid.row > endGrid.row ? endGrid.row : startGrid.row,
+                        maxRow = startGrid.row + startGrid.rowSpan > endGrid.row + endGrid.rowSpan ? startGrid.row + startGrid.rowSpan : endGrid.row + endGrid.rowSpan;
+                    let flag = true, selectedGrids = [];
+                    while(flag && selectedGrids.length < grids.length) {
+                        const _selectedGrids = grids.filter(item => item.offset >= minOffset && item.offset < maxOffset && item.row >= minRow && item.row < maxRow);
+                        _selectedGrids.forEach(({ offset, row, colSpan, rowSpan }) => {
+                            minOffset = minOffset > offset ? offset : minOffset;
+                            maxOffset = maxOffset > offset + colSpan ? maxOffset : offset + colSpan;
+                            minRow = minRow > row ? row : minRow;
+                            maxRow = maxRow > row + rowSpan ? maxRow : row + rowSpan;
+                        });
+                        if (_selectedGrids.length === selectedGrids.length) flag = false;
+                        selectedGrids = _selectedGrids;
+                    }
+                    return selectedGrids.map(item => [item.element, item.path]);
+                }
+            }
+        }
+        return [];
+    },
+    cancelSelectedTableCells(editor, table) {
+        if (table) {
+            const [, tablePath] = table;
+            Transforms.setNodes(editor, {
+                pathSelection: null,
+                selectedFlag: false,
+            }, {
+                at: tablePath,
+            })
+        }
+    },
 };
 
 const insertTableRow = (editor, { maxCols, row }) => {

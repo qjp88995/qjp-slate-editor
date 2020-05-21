@@ -104,22 +104,6 @@ export const withTables = (editor) => {
         const { selection } = editor
 
         if (selection && Range.isCollapsed(selection)) {
-            const [tableBefore] = Editor.nodes(editor, {
-                match: (n) => n.type === 'tableBefore'
-            })
-            if (tableBefore) {
-                return
-            }
-
-            const [tableAfter] = Editor.nodes(editor, {
-                match: (n) => n.type === 'tableAfter'
-            })
-            if (tableAfter) {
-                Transforms.insertNodes(editor, createDefaultElement(), {
-                    match: n => n.type === 'tableWrap'
-                });
-                return
-            }
 
             const [table] = Editor.nodes(editor, { match: (n) => n.type === 'table' })
 

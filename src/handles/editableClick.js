@@ -1,5 +1,5 @@
-import { selectTableCell } from './tableEvent';
+import { unSelectTableCell } from './tableEvent';
 
 export const editableClick = (event, editor) => {
-    selectTableCell(event, editor);
+    unSelectTableCell(event, editor);
 }
