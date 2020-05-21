@@ -230,13 +230,19 @@ export const MyEditor = {
                     const { rowSpan, colSpan, row, offset } = currentGrid;
                     const cellPaths = [];
                     for (let i = 0; i < rowSpan; i++) {
-                        const grid = grids.reverse().find(item => item.row === row + i && item.offset + item.colSpan <= offset);
-                        if (grid) {
-                            for (let j = 0; j < colSpan; j++) {
+                        const grid = grids.reverse().find(item => item.row === row + i && (item.offset + item.colSpan <= offset));
+                        for (let j = 0; j < colSpan; j++) {
+                            if (grid) {
                                 const _path = [...grid.path];
                                 const colPath = _path.pop() + 1;
                                 _path.pop();
                                 cellPaths.push([..._path, row + i, colPath + j]);
+                            } else {
+                                const _path = [...currentGrid.path];
+                                if (_path.pop() === 0) {
+                                    _path.pop();
+                                    cellPaths.push([..._path, row + i, j]);
+                                }
                             }
                         }
                     }
