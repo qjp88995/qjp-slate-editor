@@ -6,7 +6,26 @@ import { MyEditor } from '../../helpers/MyEditor';
 
 
 export const Table = props => {
+    const editor = useSlate();
     const { children, attributes, element } = props;
+    const onMouseLeave = e => {
+        const [table] = MyEditor.nodes(editor, {
+            at: [],
+            match: n => n === element,
+        });
+        if (table) {
+            const [tableElement, tablePath] = table;
+            const { selectedFlag } = tableElement;
+            if (selectedFlag) {
+                Transforms.setNodes(editor, {
+                    pathSelection: null,
+                    selectedFlag: false,
+                }, {
+                    at: tablePath,
+                });
+            }
+        }
+    }
     const className = css`
         display: inline-table;
         width: 80%;
@@ -23,7 +42,7 @@ export const Table = props => {
     `;
     const isEmpty = !Array.isArray(element.children) || !element.children.some(item => item.type === 'table-row');
     return (
-        <table {...attributes} className={className}>
+        <table {...attributes} className={className} onMouseLeave={onMouseLeave}>
             <tbody>{!isEmpty && children}</tbody>
         </table>
     );
