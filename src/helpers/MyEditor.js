@@ -150,13 +150,27 @@ export const MyEditor = {
                     to: lastNodePath,
                 });
             });
+            const [...paragraphs] = Editor.nodes(editor, {
+                at: cell[1],
+                match: n => n.type === 'paragraph',
+                reverse: true,
+            });
+            let deleteCount = 0;
+            paragraphs.forEach(([element, path]) => {
+                if(Editor.isEmpty(editor, element) && deleteCount < paragraphs.length - 1) {
+                    Transforms.removeNodes(editor, {
+                        at: path,
+                    });
+                    deleteCount++;
+                }
+            });
             otherCells.reverse().forEach(([, path]) => {
                 Transforms.removeNodes(editor, {
                     at: path,
                 });
             });
-            const point = Editor.point(editor, cell[1]);
-            Transforms.setPoint(editor, point, { edge: 'anchor' });
+            const point = Editor.point(editor, cell[1], { edge: 'end' });
+            Transforms.select(editor, { anchor: point, focus: point });
         }
     },
     splitTableCells(editor) {

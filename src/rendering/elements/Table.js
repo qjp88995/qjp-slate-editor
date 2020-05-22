@@ -16,7 +16,6 @@ export const Table = props => {
         });
         const { table, flag } = tableSelection;
         if (table && myTable && myTable[0] === table[0] && flag) {
-            console.log(123)
             timer = setTimeout(() => {
                 tableSelection.clear();
                 timer = null;
