@@ -1,5 +1,5 @@
 import { Editor, Transforms } from 'slate';
-import { tableSelection } from '../rendering/elements/Table';
+import { tableSelection } from '../rendering/elements/tableSelection';
 
 export const createDefaultElement = (text = '', attr = {}) => {
     return { type: 'paragraph', ...attr, children: [{ text }] };

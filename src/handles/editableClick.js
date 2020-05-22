@@ -1,6 +1,6 @@
 import { Range } from "slate";
 import { MyEditor } from "../helpers";
-import { tableSelection } from "../rendering/elements/Table";
+import { tableSelection } from "../rendering/elements/tableSelection";
 
 export const editableClick = (event, editor) => {
     const { selection } = editor;

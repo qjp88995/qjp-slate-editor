@@ -1,6 +1,6 @@
 import isHotkey from "is-hotkey";
 import { MyEditor } from "../helpers";
-import { tableSelection } from "../rendering/elements/Table";
+import { tableSelection } from "../rendering/elements/tableSelection";
 
 const HOTKEYS = {
     'mod+b': 'bold',

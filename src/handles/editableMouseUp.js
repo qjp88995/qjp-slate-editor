@@ -1,6 +1,6 @@
 import { Transforms, Range } from "slate";
 import { MyEditor } from "../helpers";
-import { tableSelection } from "../rendering/elements/Table";
+import { tableSelection } from "../rendering/elements/tableSelection";
 
 export const editableMouseUp = (event, editor) => {
     const { selection } = editor;
