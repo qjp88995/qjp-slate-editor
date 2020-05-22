@@ -6,26 +6,34 @@ import { MyEditor } from '../../helpers/MyEditor';
 
 
 export const Table = props => {
+    let timer = null;
     const editor = useSlate();
     const { children, attributes, element } = props;
     const onMouseLeave = e => {
-        const [table] = MyEditor.nodes(editor, {
-            at: [],
-            match: n => n === element,
-        });
-        if (table) {
-            const [tableElement, tablePath] = table;
-            const { selectedFlag } = tableElement;
-            if (selectedFlag) {
-                Transforms.setNodes(editor, {
-                    pathSelection: null,
-                    selectedFlag: false,
-                }, {
-                    at: tablePath,
-                });
+        timer = setTimeout(() => {
+            const [table] = MyEditor.nodes(editor, {
+                at: [],
+                match: n => n === element,
+            });
+            if (table) {
+                const [tableElement, tablePath] = table;
+                const { selectedFlag } = tableElement;
+                if (selectedFlag) {
+                    Transforms.setNodes(editor, {
+                        pathSelection: null,
+                        selectedFlag: false,
+                    }, {
+                        at: tablePath,
+                    });
+                }
             }
-        }
+            timer = null;
+        }, 500);
     }
+    const onMouseEnter = e => {
+        if (timer) clearTimeout(timer);
+    }
+
     const className = css`
         display: inline-table;
         width: 80%;
@@ -42,7 +50,7 @@ export const Table = props => {
     `;
     const isEmpty = !Array.isArray(element.children) || !element.children.some(item => item.type === 'table-row');
     return (
-        <table {...attributes} className={className} onMouseLeave={onMouseLeave}>
+        <table {...attributes} className={className} onMouseLeave={onMouseLeave} onMouseEnter={onMouseEnter}>
             <tbody>{!isEmpty && children}</tbody>
         </table>
     );
@@ -134,7 +142,7 @@ export const TableCell = props => {
                 if (pathSelection && selectedFlag) {
                     if (pathSelection[0].toString() !== pathSelection[1].toString()) {
                         e.preventDefault();
-                        e.stopPropagation();
+                        // e.stopPropagation();
                         window.getSelection().removeAllRanges();
                     }
                     if (cellPath.toString() !== pathSelection[1].toString()) {
@@ -163,12 +171,26 @@ export const TableCell = props => {
                 const [tableElement, tablePath] = table;
                 const { pathSelection, selectedFlag } = tableElement;
                 if (selectedFlag) {
-                    Transforms.setNodes(editor, {
-                        pathSelection: [pathSelection[0], cellPath],
-                        selectedFlag: false,
-                    }, {
-                        at: tablePath,
-                    });
+                    e.preventDefault();
+                    if (pathSelection[0].toString() !== cellPath.toString()) {
+                        Transforms.setNodes(editor, {
+                            pathSelection: [pathSelection[0], cellPath],
+                            selectedFlag: false,
+                        }, {
+                            at: tablePath,
+                        });
+                        const [firstCell] = MyEditor.getSelectedTableCells(editor, table);
+                        const [, firstCellPath] = firstCell;
+                        const point = MyEditor.point(editor, firstCellPath, { edge: 'start' });
+                        Transforms.setSelection(editor, { anchor: point, focus: point });
+                    } else {
+                        Transforms.setNodes(editor, {
+                            pathSelection: null,
+                            selectedFlag: false,
+                        }, {
+                            at: tablePath,
+                        });
+                    }
                 }
             }
         }
