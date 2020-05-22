@@ -1,34 +1,90 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { css } from 'emotion';
 import { useSlate } from 'slate-react';
 import { Transforms } from 'slate';
 import { MyEditor } from '../../helpers/MyEditor';
 
+const tableSelectionChange = new Event('tableSelectionChange');
+
+class TableSelection {
+    constructor() {
+        this._editor = null;
+        this._table = null;
+        this._selection = null;
+        this._flag = false;
+    }
+
+    set editor(editor) {
+        this._editor = editor;
+        document.dispatchEvent(tableSelectionChange);
+    }
+
+    get editor() {
+        return this._editor;
+    }
+
+    set table(table) {
+        this._table = table;
+        document.dispatchEvent(tableSelectionChange);
+    }
+
+    get table() {
+        return this._table;
+    }
+
+    set selection(selection) {
+        this._selection = selection;
+        document.dispatchEvent(tableSelectionChange);
+    }
+
+    get selection() {
+        return this._selection;
+    }
+
+    set flag(flag) {
+        this._flag = flag;
+        document.dispatchEvent(tableSelectionChange);
+    }
+
+    get flag() {
+        return this._flag;
+    }
+
+    clear = () => {
+        if (this._editor && this._table) {
+            Transforms.setNodes(this._editor, {
+                mergeCells: false,
+            }, {
+                at: this._table[1],
+            });
+        }
+        this._editor = null;
+        this._table = null;
+        this._selection = null;
+        this._flag = false;
+        document.dispatchEvent(tableSelectionChange);
+    }
+}
+
+export const tableSelection = new TableSelection();
 
 export const Table = props => {
     let timer = null;
     const editor = useSlate();
     const { children, attributes, element } = props;
     const onMouseLeave = e => {
-        timer = setTimeout(() => {
-            const [table] = MyEditor.nodes(editor, {
-                at: [],
-                match: n => n === element,
-            });
-            if (table) {
-                const [tableElement, tablePath] = table;
-                const { selectedFlag } = tableElement;
-                if (selectedFlag) {
-                    Transforms.setNodes(editor, {
-                        pathSelection: null,
-                        selectedFlag: false,
-                    }, {
-                        at: tablePath,
-                    });
-                }
-            }
-            timer = null;
-        }, 500);
+        const [myTable] = MyEditor.nodes(editor, {
+            at: [],
+            match: n => n === element,
+        });
+        const { table, flag } = tableSelection;
+        if (table && myTable && myTable[0] === table[0] && flag) {
+            console.log(123)
+            timer = setTimeout(() => {
+                tableSelection.clear();
+                timer = null;
+            }, 500);
+        }
     }
     const onMouseEnter = e => {
         if (timer) clearTimeout(timer);
@@ -67,9 +123,21 @@ export const TableRow = props => {
 };
 
 export const TableCell = props => {
+    const [selected, setSelected] = useState(false);
     const editor = useSlate();
     const { children, attributes, element } = props;
     const { colSpan = 1, rowSpan = 1 } = element;
+
+    const onTableSelectionChange = () => {
+        setSelected(isSelected());
+    }
+
+    useEffect(() => {
+        document.addEventListener('tableSelectionChange', onTableSelectionChange);
+        return () => {
+            document.removeEventListener('tableSelectionChange', onTableSelectionChange);
+        }
+    })
     const isSelected = () => {
         const [cell] = MyEditor.nodes(editor, {
             at: [],
@@ -77,15 +145,14 @@ export const TableCell = props => {
         });
         if (cell) {
             const [, cellPath] = cell;
-            const [table] = MyEditor.nodes(editor, {
+            const [myTable] = MyEditor.nodes(editor, {
                 at: cellPath,
                 match: n => n.type === 'table',
             });
-            if (table) {
-                const [tableElement] = table;
-                const { pathSelection } = tableElement;
-                if (pathSelection && pathSelection[0] && pathSelection[1]) {
-                    const selectedCells = MyEditor.getSelectedTableCells(editor, table);
+            const { selection, table } = tableSelection;
+            if (myTable && table && myTable[0] === table[0]) {
+                if (selection && selection[0] && selection[1]) {
+                    const selectedCells = MyEditor.getSelectedTableCells(editor);
                     return selectedCells.some(([, path]) => path.toString() === cellPath.toString());
                 }
             }
@@ -93,20 +160,13 @@ export const TableCell = props => {
         return false;
     }
     const style = {
-        background: isSelected() ? '#edf5fa' : 'inherit',
-        userSelect: isSelected() ? 'none' : 'auto',
+        background: selected ? '#edf5fa' : 'inherit',
+        userSelect: selected ? 'none' : 'auto',
     }
     const onMouseDown = e => {
         const [cell] = MyEditor.nodes(editor, {
             at: [],
             match: n => n === element,
-        });
-        const [...tables] = MyEditor.nodes(editor, {
-            at: [],
-            match: n => n.type === 'table',
-        });
-        tables.forEach(item => {
-            MyEditor.cancelSelectedTableCells(editor, item);
         });
         if (cell) {
             const [, cellPath] = cell;
@@ -115,13 +175,10 @@ export const TableCell = props => {
                 match: n => n.type === 'table',
             });
             if (table) {
-                const [, tablePath] = table;
-                Transforms.setNodes(editor, {
-                    pathSelection: [cellPath, cellPath],
-                    selectedFlag: true,
-                }, {
-                    at: tablePath,
-                });
+                tableSelection.editor = editor;
+                tableSelection.table = table;
+                tableSelection.selection = [cellPath, cellPath];
+                tableSelection.flag = true;
             }
         }
     }
@@ -132,25 +189,20 @@ export const TableCell = props => {
         });
         if (cell) {
             const [, cellPath] = cell;
-            const [table] = MyEditor.nodes(editor, {
+            const [myTable] = MyEditor.nodes(editor, {
                 at: cellPath,
                 match: n => n.type === 'table',
             });
-            if (table) {
-                const [tableElement, tablePath] = table;
-                const { pathSelection, selectedFlag } = tableElement;
-                if (pathSelection && selectedFlag) {
-                    if (pathSelection[0].toString() !== pathSelection[1].toString()) {
-                        e.preventDefault();
+            const { selection, flag, table } = tableSelection;
+            if (myTable && table && myTable[0] === table[0]) {
+                if (selection && flag) {
+                    if (selection[0].toString() !== selection[1].toString()) {
+                        // e.preventDefault();
                         // e.stopPropagation();
-                        window.getSelection().removeAllRanges();
+                        Transforms.deselect(editor);
                     }
-                    if (cellPath.toString() !== pathSelection[1].toString()) {
-                        Transforms.setNodes(editor, {
-                            pathSelection: [pathSelection[0], cellPath],
-                        }, {
-                            at: tablePath,
-                        });
+                    if (cellPath.toString() !== selection[1].toString()) {
+                        tableSelection.selection = [selection[0], cellPath];
                     }
                 }
             }
@@ -163,33 +215,24 @@ export const TableCell = props => {
         });
         if (cell) {
             const [, cellPath] = cell;
-            const [table] = MyEditor.nodes(editor, {
+            const [myTable] = MyEditor.nodes(editor, {
                 at: cellPath,
                 match: n => n.type === 'table',
             });
-            if (table) {
-                const [tableElement, tablePath] = table;
-                const { pathSelection, selectedFlag } = tableElement;
-                if (selectedFlag) {
-                    e.preventDefault();
-                    if (pathSelection[0].toString() !== cellPath.toString()) {
+            const { selection, flag, table } = tableSelection;
+            if (myTable && table && table[0] === myTable[0]) {
+                if (flag) {
+                    if (selection[0].toString() !== cellPath.toString()) {
+                        e.preventDefault();
+                        tableSelection.selection = [selection[0], cellPath];
+                        tableSelection.flag = false;
                         Transforms.setNodes(editor, {
-                            pathSelection: [pathSelection[0], cellPath],
-                            selectedFlag: false,
+                            mergeCells: true,
                         }, {
-                            at: tablePath,
+                            at: table[1],
                         });
-                        const [firstCell] = MyEditor.getSelectedTableCells(editor, table);
-                        const [, firstCellPath] = firstCell;
-                        const point = MyEditor.point(editor, firstCellPath, { edge: 'start' });
-                        Transforms.setSelection(editor, { anchor: point, focus: point });
                     } else {
-                        Transforms.setNodes(editor, {
-                            pathSelection: null,
-                            selectedFlag: false,
-                        }, {
-                            at: tablePath,
-                        });
+                        tableSelection.clear();
                     }
                 }
             }

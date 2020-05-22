@@ -1,4 +1,5 @@
 import { Editor, Transforms } from 'slate';
+import { tableSelection } from '../rendering/elements/Table';
 
 export const createDefaultElement = (text = '', attr = {}) => {
     return { type: 'paragraph', ...attr, children: [{ text }] };
@@ -53,11 +54,8 @@ export const isMarkActive = (editor, format) => {
 };
 
 export const isTableCellMergeActive = editor => {
-    const [table] = Editor.nodes(editor, {
-        at: [],
-        match: n => n.type === 'table' && !n.selectedFlag && !!n.pathSelection && n.pathSelection[0].toString() !== n.pathSelection[1].toString(),
-    });
-    return !!table;
+    const { table, selection, flag } = tableSelection;
+    return !!table && !flag && !!selection && selection[0].toString() !== selection[1].toString();
 };
 
 export const isTableCellSplitActive = editor => {
@@ -111,64 +109,54 @@ export const MyEditor = {
     mergeTableCells(editor) {
         const isActive = isTableCellMergeActive(editor);
         if (isActive) {
-            const [table] = Editor.nodes(editor, {
-                at: [],
-                match: n => n.type === 'table' && !n.selectedFlag && !!n.pathSelection && n.pathSelection[0].toString() !== n.pathSelection[1].toString(),
+            const cells = this.getSelectedTableCells(editor);
+            tableSelection.clear();
+            const rows = [];
+            cells.forEach(item => {
+                const [, path] = item;
+                const index = rows.findIndex(it => Array.isArray(it) && it.length > 0 && it[0][1][it[0][1].length - 2] === path[path.length - 2]);
+                if (index > -1) {
+                    rows[index].push(item)
+                } else {
+                    rows.push([item]);
+                }
             });
-            if (table) {
-                Transforms.setNodes(editor, {
-                    pathSelection: null,
-                }, {
-                    at: table[1],
-                });
-                const cells = this.getSelectedTableCells(editor, table);
-                const rows = [];
-                cells.forEach(item => {
-                    const [, path] = item;
-                    const index = rows.findIndex(it => Array.isArray(it) && it.length > 0 && it[0][1][it[0][1].length - 2] === path[path.length - 2]);
-                    if (index > -1) {
-                        rows[index].push(item)
-                    } else {
-                        rows.push([item]);
-                    }
-                });
-                const rowSpan = rows.reduce((total, item) => {
-                    const [elem] = item[0];
-                    return total + Number((elem.rowSpan || 1));
-                }, 0);
-                const colSpan = rows[0].reduce((total, item) => {
-                    const [elem] = item;
-                    return total + Number(elem.colSpan || 1);
-                }, 0);
-                const [cell, ...otherCells] = cells;
-                Transforms.setNodes(editor, {
-                    rowSpan,
-                    colSpan,
-                }, {
+            const rowSpan = rows.reduce((total, item) => {
+                const [elem] = item[0];
+                return total + Number((elem.rowSpan || 1));
+            }, 0);
+            const colSpan = rows[0].reduce((total, item) => {
+                const [elem] = item;
+                return total + Number(elem.colSpan || 1);
+            }, 0);
+            const [cell, ...otherCells] = cells;
+            Transforms.setNodes(editor, {
+                rowSpan,
+                colSpan,
+            }, {
+                at: cell[1],
+            });
+            otherCells.forEach(([, path]) => {
+                const [lastNode] = Editor.nodes(editor, {
                     at: cell[1],
+                    match: n => n.type === 'paragraph',
+                    reverse: true,
                 });
-                otherCells.forEach(([, path]) => {
-                    const [lastNode] = Editor.nodes(editor, {
-                        at: cell[1],
-                        match: n => n.type === 'paragraph',
-                        reverse: true,
-                    });
-                    const lastNodePath = [...lastNode[1]];
-                    lastNodePath.push(lastNodePath.pop() + 1);
-                    Transforms.moveNodes(editor, {
-                        at: path,
-                        match: n => n.type === 'paragraph',
-                        to: lastNodePath,
-                    });
+                const lastNodePath = [...lastNode[1]];
+                lastNodePath.push(lastNodePath.pop() + 1);
+                Transforms.moveNodes(editor, {
+                    at: path,
+                    match: n => n.type === 'paragraph',
+                    to: lastNodePath,
                 });
-                otherCells.reverse().forEach(([, path]) => {
-                    Transforms.removeNodes(editor, {
-                        at: path,
-                    });
+            });
+            otherCells.reverse().forEach(([, path]) => {
+                Transforms.removeNodes(editor, {
+                    at: path,
                 });
-                const point = Editor.point(editor, cell[1]);
-                Transforms.setPoint(editor, point, { edge: 'anchor' });
-            }
+            });
+            const point = Editor.point(editor, cell[1]);
+            Transforms.setPoint(editor, point, { edge: 'anchor' });
         }
     },
     splitTableCells(editor) {
@@ -567,16 +555,16 @@ export const MyEditor = {
             }
         }
     },
-    getSelectedTableCells(editor, table) {
+    getSelectedTableCells(editor) {
+        const { table, selection } = tableSelection;
         if (table) {
-            const [tableElement, tablePath] = table;
-            const { pathSelection } = tableElement;
+            const [, tablePath] = table;
             const [...rows] = Editor.nodes(editor, {
                 at: tablePath,
                 match: n => n.type === 'table-row',
             });
-            if (rows.length > 0 && pathSelection) {
-                const [startPath, endPath] = pathSelection;
+            if (rows.length > 0 && selection) {
+                const [startPath, endPath] = selection;
                 if (startPath && endPath && startPath.toString() !== endPath.toString()) {
                     const [firstRowElement] = rows[0];
                     const maxCols = firstRowElement.children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
@@ -638,17 +626,6 @@ export const MyEditor = {
             }
         }
         return [];
-    },
-    cancelSelectedTableCells(editor, table) {
-        if (table) {
-            const [, tablePath] = table;
-            Transforms.setNodes(editor, {
-                pathSelection: null,
-                selectedFlag: false,
-            }, {
-                at: tablePath,
-            })
-        }
     },
 };
 

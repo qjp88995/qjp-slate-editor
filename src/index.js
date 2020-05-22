@@ -7,7 +7,7 @@ import { BoldOutlined, ItalicOutlined, UnderlineOutlined, CodeOutlined, OrderedL
 import { Toolbar, MarkButton, BlockButton, CreateTableButton } from './components';
 import { elements, leaves } from './rendering';
 import { withTables } from './plugins';
-import { editableKeyDown, editableClick } from './handles';
+import { editableKeyDown, editableClick, editableMouseUp } from './handles';
 import './styles.module.css';
 
 const emptyValue = [{ type: 'paragraph', children: [{ text: '' }] }];
@@ -28,6 +28,8 @@ const App = props => {
     const onKeyDown = e => editableKeyDown(e, editor);
 
     const onClick = e => editableClick(e, editor);
+
+    const onMouseUp = e => editableMouseUp(e, editor);
 
     return (
         <Slate editor={editor} value={value} onChange={onChange}>
@@ -64,6 +66,7 @@ const App = props => {
                 autoFocus
                 onKeyDown={onKeyDown}
                 onClick={onClick}
+                onMouseUp={onMouseUp}
             />
         </Slate>
     )
