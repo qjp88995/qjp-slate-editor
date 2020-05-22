@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { css } from 'emotion';
 import { useSlate } from 'slate-react';
 import { Transforms } from 'slate';
@@ -132,6 +132,11 @@ export const TableCell = props => {
                 const [tableElement, tablePath] = table;
                 const { pathSelection, selectedFlag } = tableElement;
                 if (pathSelection && selectedFlag) {
+                    if (pathSelection[0].toString() !== pathSelection[1].toString()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.getSelection().removeAllRanges();
+                    }
                     if (cellPath.toString() !== pathSelection[1].toString()) {
                         Transforms.setNodes(editor, {
                             pathSelection: [pathSelection[0], cellPath],

@@ -623,7 +623,7 @@ export const MyEditor = {
                         maxRow = startGrid.row + startGrid.rowSpan > endGrid.row + endGrid.rowSpan ? startGrid.row + startGrid.rowSpan : endGrid.row + endGrid.rowSpan;
                     let flag = true, selectedGrids = [];
                     while(flag && selectedGrids.length < grids.length) {
-                        const _selectedGrids = grids.filter(item => item.offset >= minOffset && item.offset < maxOffset && item.row >= minRow && item.row < maxRow);
+                        const _selectedGrids = grids.filter(item => item.offset >= minOffset && item.offset < maxOffset && ((item.row >= minRow && item.row < maxRow) || (item.row + item.rowSpan > minRow && item.row + item.rowSpan <= maxRow)));
                         _selectedGrids.forEach(({ offset, row, colSpan, rowSpan }) => {
                             minOffset = minOffset > offset ? offset : minOffset;
                             maxOffset = maxOffset > offset + colSpan ? maxOffset : offset + colSpan;
