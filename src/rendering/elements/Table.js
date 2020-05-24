@@ -4,11 +4,37 @@ import { useSlate } from 'slate-react';
 import { Transforms } from 'slate';
 import { MyEditor } from '../../helpers/MyEditor';
 import { tableSelection } from './tableSelection';
+import { tableResize } from './tableResize';
 
 export const Table = props => {
+    const [tempWidths, setTempWidths] = useState([]);
+
     let timer = null;
     const editor = useSlate();
     const { children, attributes, element } = props;
+
+    const resize = () => {
+        const { table, flag, startXy, endXy, grid, type } = tableResize;
+        if (table && flag && table[0] === element) {
+            if (type === 'width') {
+                const { offset, colSpan } = grid;
+                const widths = [];
+                for (let i = 0; i < colSpan; i++) {
+                    widths.push([offset + i, endXy[0] - startXy[0]]);
+                }
+                return setTempWidths(widths);
+            }
+        }
+        return setTempWidths([]);
+    }
+
+    useEffect(() => {
+        document.addEventListener('tableResizeChange', resize);
+        return () => {
+            document.removeEventListener('tableResizeChange', resize);
+        }
+    })
+
     const onMouseLeave = e => {
         const [myTable] = MyEditor.nodes(editor, {
             at: [],
@@ -27,8 +53,6 @@ export const Table = props => {
     }
 
     const className = css`
-        display: inline-table;
-        width: 80%;
         vertical-align: middle;
         border: 1px solid #ccc;
         border-collapse: collapse;
@@ -37,12 +61,36 @@ export const Table = props => {
             border: 1px solid #ccc;
         }
         & td {
+            position: relative;
             padding: 5px;
+            & .resize-div {
+                position: absolute;
+                right: -2px;
+                top: 0;
+                bottom: 0;
+                width: 4px;
+                background: red;
+                cursor: w-resize;
+                z-index: 1000;
+            }
         }
     `;
     const isEmpty = !Array.isArray(element.children) || !element.children.some(item => item.type === 'table-row');
+    const maxCols = isEmpty ? 0 : element.children[0].children.filter(item => item.type === 'table-cell').reduce((total, item) => total + Number(item.colSpan || 1), 0);
+    const cols = element.cols ? [...element.cols] : new Array(maxCols).fill({ width: 200 });
     return (
         <table {...attributes} className={className} onMouseLeave={onMouseLeave} onMouseEnter={onMouseEnter}>
+            <colgroup contentEditable={false}>
+                {
+                    cols.map((item, index) => {
+                        const { width } = item;
+                        const key = `col${index, index}`;
+                        const changeWidth = tempWidths.find(it => it[0] === index);
+                        const _width = changeWidth ? width + changeWidth[1] : width;
+                        return ( <col key={key} span={1} style={{ width: _width > 20 ? _width : 20 }} /> );
+                    })
+                }
+            </colgroup>
             <tbody>{!isEmpty && children}</tbody>
         </table>
     );
@@ -94,10 +142,6 @@ export const TableCell = props => {
             }
         }
         return false;
-    }
-    const style = {
-        background: selected ? '#edf5fa' : 'inherit',
-        userSelect: selected ? 'none' : 'auto',
     }
     const onMouseDown = e => {
         const [cell] = MyEditor.nodes(editor, {
@@ -162,11 +206,6 @@ export const TableCell = props => {
                         e.preventDefault();
                         tableSelection.selection = [selection[0], cellPath];
                         tableSelection.flag = false;
-                        Transforms.setNodes(editor, {
-                            mergeCells: true,
-                        }, {
-                            at: table[1],
-                        });
                     } else {
                         tableSelection.clear();
                     }
@@ -174,7 +213,46 @@ export const TableCell = props => {
             }
         }
     }
+    const onResizeMouseDown = e => {
+        e.preventDefault();
+        e.stopPropagation();
+        const [cell] = MyEditor.nodes(editor, {
+            at: [],
+            match: n => n === element,
+        });
+        if (cell) {
+            const [, cellPath] = cell;
+            const [myTable] = MyEditor.nodes(editor, {
+                at: cellPath,
+                match: n => n.type === 'table',
+            });
+            if (myTable) {
+                const grids = MyEditor.getTableGrids(editor, myTable);
+                tableResize.table = myTable;
+                tableResize.grid = grids.find(item => item.path.toString() === cellPath.toString());
+                if (tableResize.grid) {
+                    tableResize.flag = true;
+                    tableResize.type = 'width';
+                    tableResize.startXy = [e.pageX, e.pageY];
+                    tableResize.endXy = [e.pageX, e.pageY];
+                } else {
+                    tableResize.clear();
+                }
+            }
+        }
+    }
     return (
-        <td {...attributes} colSpan={colSpan} rowSpan={rowSpan} style={style} onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp}>{children}</td>
+        <td
+            {...attributes}
+            style={{ background: selected ? '#edf5fa' : 'inherit' }}
+            colSpan={colSpan}
+            rowSpan={rowSpan}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+        >
+            <div className="resize-div" contentEditable={false} onMouseDown={onResizeMouseDown} />
+            {children}
+        </td>
     );
 };

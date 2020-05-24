@@ -1,5 +1,6 @@
 import { Editor, Transforms } from 'slate';
 import { tableSelection } from '../rendering/elements/tableSelection';
+import { tableResize } from '../rendering/elements/tableResize';
 
 export const createDefaultElement = (text = '', attr = {}) => {
     return { type: 'paragraph', ...attr, children: [{ text }] };
@@ -7,6 +8,7 @@ export const createDefaultElement = (text = '', attr = {}) => {
 
 export const createTableElement = (rows = 1, cols = 1, attr = {}) => ({
     type: 'table',
+    cols: new Array(cols).fill({ width: 200 }),
     ...attr,
     children: new Array(rows).fill(null).map(() => createTableRowElement(cols))
 });
@@ -54,8 +56,11 @@ export const isMarkActive = (editor, format) => {
 };
 
 export const isTableCellMergeActive = editor => {
+    const [myTable] = Editor.nodes(editor, {
+        match: n => n.type === 'table',
+    });
     const { table, selection, flag } = tableSelection;
-    return !!table && !flag && !!selection && selection[0].toString() !== selection[1].toString();
+    return !!myTable && !!table && !flag && !!selection && selection[0].toString() !== selection[1].toString();
 };
 
 export const isTableCellSplitActive = editor => {
@@ -186,48 +191,7 @@ export const MyEditor = {
                     match: n => n.type === 'table',
                 });
                 if (table) {
-                    const [, tablePath] = table;
-                    const [...rows] = Editor.nodes(editor, {
-                        at: tablePath,
-                        match: n => n.type === 'table-row',
-                    });
-                    const [firstRowElement] = rows[0];
-                    const maxCols = firstRowElement.children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
-                    const deposit = new Array(maxCols).fill(0);
-                    const grids = [];
-                    rows.forEach(([, rowPath]) => {
-                        const [...cells] = Editor.nodes(editor, {
-                            at: rowPath,
-                            match: n => n.type === 'table-cell',
-                        });
-                        for(let i = 0, j = 0; i < deposit.length;) {
-                            if (deposit[i] === 0) {
-                                if (cells[j]) {
-                                    const [cellElement, cellPath] = cells[j];
-                                    const rowSpan = Number(cellElement.rowSpan || 1);
-                                    const colSpan = Number(cellElement.colSpan || 1);
-                                    grids.push({
-                                        element: cellElement,
-                                        path: cellPath,
-                                        offset: i,
-                                        row: rowPath[rowPath.length - 1],
-                                        colSpan,
-                                        rowSpan,
-                                    });
-                                    j++;
-                                    for (let k = 0; k < colSpan; k++) {
-                                        deposit[i] = rowSpan - 1;
-                                        i++;
-                                    }
-                                } else {
-                                    i++;
-                                }
-                            } else {
-                                deposit[i]--;
-                                i++;
-                            }
-                        }
-                    });
+                    const grids = this.getTableGrids(editor, table);
                     const currentGrid = grids.find(item => item.path.toString() === path.toString());
                     const { rowSpan, colSpan, row, offset } = currentGrid;
                     const cellPaths = [];
@@ -571,75 +535,102 @@ export const MyEditor = {
     },
     getSelectedTableCells(editor) {
         const { table, selection } = tableSelection;
-        if (table) {
-            const [, tablePath] = table;
-            const [...rows] = Editor.nodes(editor, {
-                at: tablePath,
-                match: n => n.type === 'table-row',
-            });
-            if (rows.length > 0 && selection) {
-                const [startPath, endPath] = selection;
-                if (startPath && endPath && startPath.toString() !== endPath.toString()) {
-                    const [firstRowElement] = rows[0];
-                    const maxCols = firstRowElement.children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
-                    const deposit = new Array(maxCols).fill(0);
-                    const grids = [];
-                    rows.forEach(([, rowPath]) => {
-                        const [...cells] = Editor.nodes(editor, {
-                            at: rowPath,
-                            match: n => n.type === 'table-cell',
-                        });
-                        for(let i = 0, j = 0; i < deposit.length;) {
-                            if (deposit[i] === 0) {
-                                if (cells[j]) {
-                                    const [cellElement, cellPath] = cells[j];
-                                    const rowSpan = Number(cellElement.rowSpan || 1);
-                                    const colSpan = Number(cellElement.colSpan || 1);
-                                    grids.push({
-                                        element: cellElement,
-                                        path: cellPath,
-                                        offset: i,
-                                        row: rowPath[rowPath.length - 1],
-                                        colSpan,
-                                        rowSpan,
-                                    });
-                                    j++;
-                                    for (let k = 0; k < colSpan; k++) {
-                                        deposit[i] = rowSpan - 1;
-                                        i++;
-                                    }
-                                } else {
-                                    i++;
-                                }
-                            } else {
-                                deposit[i]--;
-                                i++;
-                            }
-                        }
+        if (table && selection) {
+            const grids = this.getTableGrids(editor, table);
+            const [startPath, endPath] = selection;
+            if (startPath && endPath && startPath.toString() !== endPath.toString()) {
+                const startGrid = grids.find(item => item.path.toString() === startPath.toString());
+                const endGrid = grids.find(item => item.path.toString() === endPath.toString());
+                let minOffset = startGrid.offset > endGrid.offset ? endGrid.offset : startGrid.offset,
+                    maxOffset = startGrid.offset + startGrid.colSpan > endGrid.offset + endGrid.colSpan ? startGrid.offset + startGrid.colSpan : endGrid.offset + endGrid.colSpan,
+                    minRow = startGrid.row > endGrid.row ? endGrid.row : startGrid.row,
+                    maxRow = startGrid.row + startGrid.rowSpan > endGrid.row + endGrid.rowSpan ? startGrid.row + startGrid.rowSpan : endGrid.row + endGrid.rowSpan;
+                let flag = true, selectedGrids = [];
+                while(flag && selectedGrids.length < grids.length) {
+                    const _selectedGrids = grids.filter(item => item.offset >= minOffset && item.offset < maxOffset && ((item.row >= minRow && item.row < maxRow) || (item.row + item.rowSpan > minRow && item.row + item.rowSpan <= maxRow)));
+                    _selectedGrids.forEach(({ offset, row, colSpan, rowSpan }) => {
+                        minOffset = minOffset > offset ? offset : minOffset;
+                        maxOffset = maxOffset > offset + colSpan ? maxOffset : offset + colSpan;
+                        minRow = minRow > row ? row : minRow;
+                        maxRow = maxRow > row + rowSpan ? maxRow : row + rowSpan;
                     });
-                    const startGrid = grids.find(item => item.path.toString() === startPath.toString());
-                    const endGrid = grids.find(item => item.path.toString() === endPath.toString());
-                    let minOffset = startGrid.offset > endGrid.offset ? endGrid.offset : startGrid.offset,
-                        maxOffset = startGrid.offset + startGrid.colSpan > endGrid.offset + endGrid.colSpan ? startGrid.offset + startGrid.colSpan : endGrid.offset + endGrid.colSpan,
-                        minRow = startGrid.row > endGrid.row ? endGrid.row : startGrid.row,
-                        maxRow = startGrid.row + startGrid.rowSpan > endGrid.row + endGrid.rowSpan ? startGrid.row + startGrid.rowSpan : endGrid.row + endGrid.rowSpan;
-                    let flag = true, selectedGrids = [];
-                    while(flag && selectedGrids.length < grids.length) {
-                        const _selectedGrids = grids.filter(item => item.offset >= minOffset && item.offset < maxOffset && ((item.row >= minRow && item.row < maxRow) || (item.row + item.rowSpan > minRow && item.row + item.rowSpan <= maxRow)));
-                        _selectedGrids.forEach(({ offset, row, colSpan, rowSpan }) => {
-                            minOffset = minOffset > offset ? offset : minOffset;
-                            maxOffset = maxOffset > offset + colSpan ? maxOffset : offset + colSpan;
-                            minRow = minRow > row ? row : minRow;
-                            maxRow = maxRow > row + rowSpan ? maxRow : row + rowSpan;
-                        });
-                        if (_selectedGrids.length === selectedGrids.length) flag = false;
-                        selectedGrids = _selectedGrids;
-                    }
-                    return selectedGrids.map(item => [item.element, item.path]);
+                    if (_selectedGrids.length === selectedGrids.length) flag = false;
+                    selectedGrids = _selectedGrids;
                 }
+                return selectedGrids.map(item => [item.element, item.path]);
             }
         }
         return [];
+    },
+    getTableGrids(editor, table) {
+        const [, tablePath] = table;
+        const [...rows] = Editor.nodes(editor, {
+            at: tablePath,
+            match: n => n.type === 'table-row',
+        });
+        const [firstRowElement] = rows[0];
+        const maxCols = firstRowElement.children.filter(item => item.type === 'table-cell').reduce((total, item) => total + (Number(item.colSpan) || 1), 0);
+        const deposit = new Array(maxCols).fill(0);
+        const grids = [];
+        rows.forEach(([, rowPath]) => {
+            const [...cells] = Editor.nodes(editor, {
+                at: rowPath,
+                match: n => n.type === 'table-cell',
+            });
+            for(let i = 0, j = 0; i < deposit.length;) {
+                if (deposit[i] === 0) {
+                    if (cells[j]) {
+                        const [cellElement, cellPath] = cells[j];
+                        const rowSpan = Number(cellElement.rowSpan || 1);
+                        const colSpan = Number(cellElement.colSpan || 1);
+                        grids.push({
+                            element: cellElement,
+                            path: cellPath,
+                            offset: i,
+                            row: rowPath[rowPath.length - 1],
+                            colSpan,
+                            rowSpan,
+                        });
+                        j++;
+                        for (let k = 0; k < colSpan; k++) {
+                            deposit[i] = rowSpan - 1;
+                            i++;
+                        }
+                    } else {
+                        i++;
+                    }
+                } else {
+                    deposit[i]--;
+                    i++;
+                }
+            }
+        });
+        return grids;
+    },
+    resizeTable(editor) {
+        const { table, grid, type, flag,  startXy, endXy } = tableResize;
+        if (table && flag) {
+            const [tableElement, tablePath] = table;
+            const firstRow = tableElement.children.filter(item => item.type === 'table-row')[0];
+            const maxCols = firstRow.children.filter(item => item.type === 'table-cell').reduce((total, item) => total + Number(item.colSpan || 1), 0);
+            const cols = tableElement.cols ? [...tableElement.cols] : new Array(maxCols).fill({ width: 200 });
+            const resizeX = endXy[0] - startXy[0];
+            const { offset, colSpan } = grid;
+            const minWidth = 20;
+            for (let i = 0; i < colSpan; i++) {
+                const width = cols[offset + i].width + resizeX;
+                cols[offset + i] = {
+                    ...cols[offset + i],
+                    width: width > minWidth ? width : minWidth,
+                };
+            }
+            Transforms.setNodes(editor, {
+                cols,
+            }, {
+                at: tablePath,
+            });
+        }
+        tableResize.clear();
     },
 };
 

@@ -1,6 +1,7 @@
 import { Transforms, Range } from "slate";
 import { MyEditor } from "../helpers";
 import { tableSelection } from "../rendering/elements/tableSelection";
+import { tableResize } from "../rendering/elements/tableResize";
 
 export const editableMouseUp = (event, editor) => {
     const { selection } = editor;
@@ -21,5 +22,9 @@ export const editableMouseUp = (event, editor) => {
                 tableSelection.clear();
             }
         }
+    }
+    if (tableResize.table && tableResize.flag) {
+        tableResize.endXy = [event.pageX, event.pageY];
+        MyEditor.resizeTable(editor);
     }
 }
