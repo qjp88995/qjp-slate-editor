@@ -1,10 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { css } from 'emotion';
 import { useSlate } from 'slate-react';
-import { Transforms } from 'slate';
+import { Transforms, Range } from 'slate';
 import { MyEditor } from '../../helpers/MyEditor';
 import { tableSelection } from './tableSelection';
 import { tableResize } from './tableResize';
+import { eventManager } from '../../handles';
+
+const globalMouseMove = (event, editor) => {
+    if (tableResize.table && tableResize.flag) {
+        tableResize.endXy = [event.pageX, event.pageY];
+    }
+}
+
+eventManager.register({ type: 'editorMouseMove', event: globalMouseMove});
+
+const globalMouseUp = (event, editor) => {
+    const { selection } = editor;
+    if (!selection) {
+        if (tableSelection.table && tableSelection.selection && !tableSelection.flag) {
+            const [firstCell] = MyEditor.getSelectedTableCells(editor);
+            const [, firstCellPath] = firstCell;
+            const point = MyEditor.point(editor, firstCellPath, { edge: 'start' });
+            Transforms.select(editor, { anchor: point, focus: point });
+        }
+    }
+    if (tableResize.table && tableResize.flag) {
+        tableResize.endXy = [event.pageX, event.pageY];
+        MyEditor.resizeTable(editor);
+    }
+}
+
+eventManager.register({ type: 'editorMouseUp', event: globalMouseUp });
 
 export const Table = props => {
     const [tempWidths, setTempWidths] = useState([]);
@@ -32,8 +59,26 @@ export const Table = props => {
         document.addEventListener('tableResizeChange', resize);
         return () => {
             document.removeEventListener('tableResizeChange', resize);
+        };
+    }, []);
+    
+    useEffect(() => {
+        const clearTableSelection = (event, editor) => {
+            const { selection } = editor;
+            if (selection && Range.isCollapsed(selection)) {
+                const [table] = MyEditor.nodes(editor, {
+                    match: n => n === element,
+                });
+                if (!table) {
+                    tableSelection.clear();
+                }
+            }
         }
-    })
+        const key = eventManager.register({ type: 'editorMouseUp', event: clearTableSelection });
+        return () => {
+            eventManager.remove(key);
+        };
+    }, []);
 
     const onMouseLeave = e => {
         const [myTable] = MyEditor.nodes(editor, {
@@ -121,7 +166,8 @@ export const TableCell = props => {
         return () => {
             document.removeEventListener('tableSelectionChange', onTableSelectionChange);
         }
-    })
+    }, [])
+
     const isSelected = () => {
         const [cell] = MyEditor.nodes(editor, {
             at: [],
@@ -177,8 +223,6 @@ export const TableCell = props => {
             if (myTable && table && myTable[0] === table[0]) {
                 if (selection && flag) {
                     if (selection[0].toString() !== selection[1].toString()) {
-                        // e.preventDefault();
-                        // e.stopPropagation();
                         Transforms.deselect(editor);
                     }
                     if (cellPath.toString() !== selection[1].toString()) {
@@ -203,7 +247,6 @@ export const TableCell = props => {
             if (myTable && table && table[0] === myTable[0]) {
                 if (flag) {
                     if (selection[0].toString() !== cellPath.toString()) {
-                        e.preventDefault();
                         tableSelection.selection = [selection[0], cellPath];
                         tableSelection.flag = false;
                     } else {

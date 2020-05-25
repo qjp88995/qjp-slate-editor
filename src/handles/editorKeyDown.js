@@ -1,6 +1,7 @@
 import isHotkey from "is-hotkey";
 import { MyEditor } from "../helpers";
 import { tableSelection } from "../rendering/elements/tableSelection";
+import { eventManager } from "./eventManager";
 
 const HOTKEYS = {
     'mod+b': 'bold',
@@ -9,7 +10,9 @@ const HOTKEYS = {
     'mod+`': 'code'
 }
 
-export const editableKeyDown = (e, editor) => {
+export const editorKeyDown = (e, editor) => {
+    const events = eventManager.filter('editorKeyDown');
+    events.forEach(item => item.event(event, editor));
     if (tableSelection.editor) {
         tableSelection.clear();
     }

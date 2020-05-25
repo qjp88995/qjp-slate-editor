@@ -7,7 +7,7 @@ import { BoldOutlined, ItalicOutlined, UnderlineOutlined, CodeOutlined, OrderedL
 import { Toolbar, MarkButton, BlockButton, CreateTableButton } from './components';
 import { elements, leaves } from './rendering';
 import { withTables } from './plugins';
-import { editableKeyDown, editableClick, editableMouseUp, editableMouseMove } from './handles';
+import { editorKeyDown, editorClick, editorMouseUp, editorMouseMove } from './handles';
 import './styles.module.css';
 
 const emptyValue = [{ type: 'paragraph', children: [{ text: '' }] }];
@@ -25,13 +25,13 @@ const App = props => {
         setValue(value)
     }
 
-    const onKeyDown = e => editableKeyDown(e, editor);
+    const onKeyDown = e => editorKeyDown(e, editor);
 
-    const onClick = e => editableClick(e, editor);
+    const onClick = e => editorClick(e, editor);
 
-    const onMouseUp = e => editableMouseUp(e, editor);
+    const onMouseUp = e => editorMouseUp(e, editor);
 
-    const onMouseMove = e => editableMouseMove(e, editor);
+    const onMouseMove = e => editorMouseMove(e, editor);
 
     return (
         <Slate editor={editor} value={value} onChange={onChange}>
