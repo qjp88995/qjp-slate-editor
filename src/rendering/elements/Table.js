@@ -40,27 +40,25 @@ export const Table = props => {
     const editor = useSlate();
     const { children, attributes, element } = props;
 
-    const resize = () => {
-        const { table, flag, startXy, endXy, grid, type } = tableResize;
-        if (table && flag && table[0] === element) {
-            if (type === 'width') {
-                const { offset, colSpan } = grid;
-                const widths = [];
-                for (let i = 0; i < colSpan; i++) {
-                    widths.push([offset + i, endXy[0] - startXy[0]]);
-                }
-                return setTempWidths(widths);
-            }
-        }
-        return setTempWidths([]);
-    }
-
+    
     useEffect(() => {
+        const resize = () => {
+            const { table, flag, startXy, endXy, grid, type } = tableResize;
+            if (table && flag && table[0] === element) {
+                if (type === 'width') {
+                    const { offset, colSpan } = grid;
+                    const widths = [];
+                    for (let i = 0; i < colSpan; i++) {
+                        widths.push([offset + i, endXy[0] - startXy[0]]);
+                    }
+                    return setTempWidths(widths);
+                }
+            }
+            return setTempWidths([]);
+        }
         document.addEventListener('tableResizeChange', resize);
-        return () => {
-            document.removeEventListener('tableResizeChange', resize);
-        };
-    }, []);
+        return () => document.removeEventListener('tableResizeChange', resize);
+    }, [element]);
     
     useEffect(() => {
         const clearTableSelection = (event, editor) => {
@@ -75,9 +73,7 @@ export const Table = props => {
             }
         }
         const key = eventManager.register({ type: 'editorMouseUp', event: clearTableSelection });
-        return () => {
-            eventManager.remove(key);
-        };
+        return () => eventManager.remove(key);
     }, []);
 
     const onMouseLeave = e => {
@@ -163,9 +159,7 @@ export const TableCell = props => {
 
     useEffect(() => {
         document.addEventListener('tableSelectionChange', onTableSelectionChange);
-        return () => {
-            document.removeEventListener('tableSelectionChange', onTableSelectionChange);
-        }
+        return () => document.removeEventListener('tableSelectionChange', onTableSelectionChange);
     }, [])
 
     const isSelected = () => {
