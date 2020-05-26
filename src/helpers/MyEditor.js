@@ -1,4 +1,4 @@
-import { Editor, Transforms } from 'slate';
+import { Editor, Transforms, Range } from 'slate';
 import { tableSelection } from '../rendering/elements/tableSelection';
 import { tableResize } from '../rendering/elements/tableResize';
 
@@ -21,6 +21,30 @@ export const createTableRowElement = (cols = 1, attr = {}) => ({
 
 export const createTableCellElement = (attr = {}) => ({
     type: 'table-cell',
+    ...attr,
+    children: [ createDefaultElement() ],
+});
+
+export const createCheckbox = (attr = {}) => ({
+    type: 'checkbox',
+    ...attr,
+    children: [ createDefaultElement() ],
+});
+
+export const createRadio = (attr = {}) => ({
+    type: 'radio',
+    ...attr,
+    children: [ createDefaultElement() ],
+});
+
+export const createInput = (attr = {}) => ({
+    type: 'input',
+    ...attr,
+    children: [ createDefaultElement() ],
+});
+
+export const createTextarea = (attr = {}) => ({
+    type: 'textarea',
     ...attr,
     children: [ createDefaultElement() ],
 });
@@ -740,5 +764,17 @@ export const MyEditor = {
             });
         }
         tableResize.clear();
+    },
+    insertCheckbox(editor) {
+        const { selection } = editor;
+        if (selection && Range.isCollapsed(selection)) {
+            this.insertNode(editor, createCheckbox());
+        }
+    },
+    insertRadio(editor) {
+        const { selection } = editor;
+        if (selection && Range.isCollapsed(selection)) {
+            this.insertNode(editor, createRadio());
+        }
     },
 };

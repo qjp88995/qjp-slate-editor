@@ -4,6 +4,7 @@ import { Heading1, Heading2, Heading3, Heading4, Heading5, Heading6 } from './He
 import { NumberedList, BulletedList, ListItem } from './List';
 import { Table, TableRow, TableCell } from './Table';
 import Default from './Default';
+import { Checkbox, Radio, Input, Textarea } from './Input';
 
 export const elements = ({ attributes, children, element }) => {
     switch (element.type) {
@@ -33,6 +34,14 @@ export const elements = ({ attributes, children, element }) => {
             return <TableRow attributes={attributes} element={element}>{children}</TableRow>
         case 'table-cell':
             return <TableCell attributes={attributes} element={element}>{children}</TableCell>
+        case 'checkbox':
+            return <Checkbox attributes={attributes} element={element}>{children}</Checkbox>
+        case 'radio':
+            return <Radio attributes={attributes} element={element}>{children}</Radio>
+        case 'input':
+            return <Input attributes={attributes} element={element}>{children}</Input>
+        case 'textarea':
+            return <Textarea attributes={attributes} element={element}>{children}</Textarea>
         default:
             return <Default attributes={attributes} element={element}>{children}</Default>
     }

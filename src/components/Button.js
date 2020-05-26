@@ -65,6 +65,14 @@ export const BlockButton = ({ format, icon, ...props }) => {
                     MyEditor.deleteTableCol(editor);
                     return
                 }
+                if (format === 'checkbox') {
+                    MyEditor.insertCheckbox(editor);
+                    return
+                }
+                if (format === 'radio') {
+                    MyEditor.insertRadio(editor);
+                    return
+                }
                 MyEditor.toggleBlock(editor, format)
             }}
         >

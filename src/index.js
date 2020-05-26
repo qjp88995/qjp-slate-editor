@@ -3,10 +3,10 @@ import { Slate, Editable, withReact } from 'slate-react';
 import { createEditor } from 'slate';
 import { withHistory } from 'slate-history';
 import { css } from 'emotion';
-import { BoldOutlined, ItalicOutlined, UnderlineOutlined, CodeOutlined, OrderedListOutlined, UnorderedListOutlined, TableOutlined, MergeCellsOutlined, SplitCellsOutlined, InsertRowAboveOutlined, InsertRowBelowOutlined, InsertRowLeftOutlined, InsertRowRightOutlined, DeleteRowOutlined, DeleteColumnOutlined } from '@ant-design/icons';
+import { BoldOutlined, ItalicOutlined, UnderlineOutlined, CodeOutlined, OrderedListOutlined, UnorderedListOutlined, TableOutlined, MergeCellsOutlined, SplitCellsOutlined, InsertRowAboveOutlined, InsertRowBelowOutlined, InsertRowLeftOutlined, InsertRowRightOutlined, DeleteRowOutlined, DeleteColumnOutlined, CheckSquareOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { Toolbar, MarkButton, BlockButton, CreateTableButton } from './components';
 import { elements, leaves } from './rendering';
-import { withTables } from './plugins';
+import { withTables, withInput } from './plugins';
 import { editorKeyDown, editorClick, editorMouseUp, editorMouseMove } from './handles';
 import './styles.module.css';
 
@@ -18,7 +18,7 @@ const App = props => {
     const renderElement = useCallback(elements, [])
     const renderLeaf = useCallback(leaves, [])
     const editor = useMemo(
-        () => withTables(withHistory(withReact(createEditor()))),
+        () => withInput(withTables(withHistory(withReact(createEditor())))),
         []
     )
     const onChange = (value) => {
@@ -58,6 +58,8 @@ const App = props => {
                 <BlockButton format='table-col-insert-right' icon={(<InsertRowRightOutlined />)} title='向右插入列' />
                 <BlockButton format='table-row-delete' icon={(<DeleteRowOutlined />)} title='删除行' />
                 <BlockButton format='table-col-delete' icon={(<DeleteColumnOutlined />)} title='删除列' />
+                <BlockButton format="checkbox" icon={(<CheckSquareOutlined />)} title="复选框" />
+                <BlockButton format="radio" icon={(<CheckCircleOutlined />)} title="单选框" />
             </Toolbar>
             <Editable
                 className={css`height: 600px; overflow: auto; padding: 10px;`}
