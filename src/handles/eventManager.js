@@ -32,8 +32,7 @@ class EventManager {
             result = delete this._events[props];
         } else {
             const { type, event  } = props;
-            const _event = this.toArray().find(item => item && item.type === type && item.type === event);
-            console.log(_event);
+            const _event = this.toArray().find(item => item && item.type === type && item.event === event);
             if (_event) result = delete this._events[_event.key];
         }
         if (result) this._count--;

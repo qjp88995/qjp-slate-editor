@@ -74,7 +74,7 @@ export const Table = props => {
         }
         const key = eventManager.register({ type: 'editorMouseUp', event: clearTableSelection });
         return () => eventManager.remove(key);
-    }, []);
+    }, [element]);
 
     const onMouseLeave = e => {
         const [myTable] = MyEditor.nodes(editor, {
